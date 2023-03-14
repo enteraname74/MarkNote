@@ -1,0 +1,6 @@
+data/com.github.MarkNote.desktop.in
+data/com.github.MarkNote.appdata.xml.in
+data/com.github.MarkNote.gschema.xml
+src/main.c
+src/marknote-window.c
+src/marknote-window.ui

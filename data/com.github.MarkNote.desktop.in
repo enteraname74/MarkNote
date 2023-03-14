@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=marknote
+Exec=marknote
+Icon=com.github.MarkNote
+Terminal=false
+Type=Application
+Categories=GTK;
+StartupNotify=true
