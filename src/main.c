@@ -35,7 +35,7 @@ main (int   argc,
 	bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
 	textdomain (GETTEXT_PACKAGE);
 
-	app = marknote_application_new ("com.github.MarkNote", G_APPLICATION_FLAGS_NONE);
+	app = marknote_application_new ("com.github.MarkNote", G_APPLICATION_DEFAULT_FLAGS);
 	ret = g_application_run (G_APPLICATION (app), argc, argv);
 
 	return ret;

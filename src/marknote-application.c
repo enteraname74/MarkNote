@@ -30,10 +30,10 @@ struct _MarknoteApplication
 
 G_DEFINE_TYPE (MarknoteApplication, marknote_application, ADW_TYPE_APPLICATION)
 
-MarknoteApplication *
-marknote_application_new (const char        *application_id,
-                          GApplicationFlags  flags)
-{
+MarknoteApplication * marknote_application_new (
+  const char *application_id,
+  GApplicationFlags  flags) {
+
   g_return_val_if_fail (application_id != NULL, NULL);
 
   return g_object_new (MARKNOTE_TYPE_APPLICATION,
@@ -42,9 +42,7 @@ marknote_application_new (const char        *application_id,
                        NULL);
 }
 
-static void
-marknote_application_activate (GApplication *app)
-{
+static void marknote_application_activate (GApplication *app) {
   GtkWindow *window;
 
   g_assert (MARKNOTE_IS_APPLICATION (app));
@@ -58,19 +56,17 @@ marknote_application_activate (GApplication *app)
   gtk_window_present (window);
 }
 
-static void
-marknote_application_class_init (MarknoteApplicationClass *klass)
-{
+static void marknote_application_class_init (MarknoteApplicationClass *klass) {
   GApplicationClass *app_class = G_APPLICATION_CLASS (klass);
 
   app_class->activate = marknote_application_activate;
 }
 
-static void
-marknote_application_about_action (GSimpleAction *action,
-                                   GVariant      *parameter,
-                                   gpointer       user_data)
-{
+static void marknote_application_about_action (
+  GSimpleAction *action,
+  GVariant *parameter,
+  gpointer user_data) {
+
   static const char *developers[] = {"Noah  Penin", NULL};
   MarknoteApplication *self = user_data;
   GtkWindow *window = NULL;
@@ -89,11 +85,10 @@ marknote_application_about_action (GSimpleAction *action,
                          NULL);
 }
 
-static void
-marknote_application_quit_action (GSimpleAction *action,
-                                  GVariant      *parameter,
-                                  gpointer       user_data)
-{
+static void marknote_application_quit_action (
+  GSimpleAction *action,
+  GVariant *parameter,
+  gpointer user_data) {
   MarknoteApplication *self = user_data;
 
   g_assert (MARKNOTE_IS_APPLICATION (self));
@@ -107,8 +102,7 @@ static const GActionEntry app_actions[] = {
 };
 
 static void
-marknote_application_init (MarknoteApplication *self)
-{
+marknote_application_init (MarknoteApplication *self) {
   g_action_map_add_action_entries (G_ACTION_MAP (self),
                                    app_actions,
                                    G_N_ELEMENTS (app_actions),
