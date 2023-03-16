@@ -30,9 +30,7 @@ struct _MarknoteApplication
 
 G_DEFINE_TYPE (MarknoteApplication, marknote_application, ADW_TYPE_APPLICATION)
 
-MarknoteApplication * marknote_application_new (
-  const char *application_id,
-  GApplicationFlags  flags) {
+MarknoteApplication * marknote_application_new (const char *application_id, GApplicationFlags flags) {
 
   g_return_val_if_fail (application_id != NULL, NULL);
 
@@ -81,7 +79,7 @@ static void marknote_application_about_action (
                          "developer-name", "Noah  Penin",
                          "version", "0.1.0",
                          "developers", developers,
-                         "copyright", "© 2023 Noah  Penin",
+                         "copyright", "© 2023 Noah Penin",
                          NULL);
 }
 
@@ -101,8 +99,7 @@ static const GActionEntry app_actions[] = {
   { "about", marknote_application_about_action },
 };
 
-static void
-marknote_application_init (MarknoteApplication *self) {
+static void marknote_application_init (MarknoteApplication *self) {
   g_action_map_add_action_entries (G_ACTION_MAP (self),
                                    app_actions,
                                    G_N_ELEMENTS (app_actions),

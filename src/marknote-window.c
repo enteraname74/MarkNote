@@ -29,22 +29,29 @@ struct _MarknoteWindow
   /* Template widgets */
   GtkHeaderBar        *header_bar;
   GtkLabel            *label;
+  GtkButton           *new_windows_button;
 };
 
 G_DEFINE_FINAL_TYPE (MarknoteWindow, marknote_window, ADW_TYPE_APPLICATION_WINDOW)
 
-static void
-marknote_window_class_init (MarknoteWindowClass *klass)
+static void click_button(GtkWidget *widget, gpointer data){
+  char *text = (char *)data;
+  g_print("%s", text);
+}
+
+static void marknote_window_class_init (MarknoteWindowClass *klass)
 {
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
 
   gtk_widget_class_set_template_from_resource (widget_class, "/com/github/MarkNote/marknote-window.ui");
   gtk_widget_class_bind_template_child (widget_class, MarknoteWindow, header_bar);
   gtk_widget_class_bind_template_child (widget_class, MarknoteWindow, label);
+  gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, new_windows_button);
 }
 
-static void
-marknote_window_init (MarknoteWindow *self)
+static void marknote_window_init (MarknoteWindow *self)
 {
   gtk_widget_init_template (GTK_WIDGET (self));
+
+  g_signal_connect (GTK_BUTTON(self->new_windows_button), "clicked", G_CALLBACK (click_button), (gpointer)"AMOGUS");
 }
