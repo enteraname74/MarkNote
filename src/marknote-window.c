@@ -39,6 +39,7 @@ static void click_button(GtkWidget *widget, gpointer data){
   MarknoteWindow *current_window = (MarknoteWindow *)data;
   GtkWindow *window;
 
+
   window = g_object_new (MARKNOTE_TYPE_EDITOR_WINDOW,
                            "application", current_window->parent_instance,
                            NULL);
@@ -62,3 +63,4 @@ static void marknote_window_init (MarknoteWindow *self)
 
   g_signal_connect (GTK_BUTTON(self->new_windows_button), "clicked", G_CALLBACK (click_button), (gpointer)self);
 }
+

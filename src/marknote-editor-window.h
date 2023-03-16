@@ -26,6 +26,6 @@ G_BEGIN_DECLS
 
 #define MARKNOTE_TYPE_EDITOR_WINDOW (marknote_editor_window_get_type())
 
-G_DECLARE_FINAL_TYPE (MarknoteEditorWindow, marknote_editor_window, MARKNOTE_EDITOR, WINDOW, AdwApplicationWindow)
+G_DECLARE_FINAL_TYPE (MarknoteEditorWindow, marknote_editor_window, MARKNOTE, EDITOR_WINDOW, AdwApplicationWindow)
 
 G_END_DECLS
