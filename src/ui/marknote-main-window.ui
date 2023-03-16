@@ -5,43 +5,71 @@
   <template class="MarknoteWindow" parent="AdwApplicationWindow">
     <property name="default-width">600</property>
     <property name="default-height">300</property>
+    <style>
+      <class name="devel"/>
+    </style>
     <child>
-      <object class="GtkBox">
-        <property name="orientation">vertical</property>
+      <object class="GtkStack" id="stack">
         <child>
-          <object class="GtkHeaderBar" id="header_bar">
-            <child type="start">
-              <object class="GtkMenuButton">
-                <property name="icon-name">open-menu-symbolic</property>
-                <property name="menu-model">primary_menu</property>
+          <object class="GtkStackPage" id="page1">
+            <property name="name">page1</property>
+            <property name="title">main page</property>
+            <property name="child">
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <child>
+                  <object class="GtkHeaderBar" id="header_bar">
+                    <child type="end">
+                      <object class="GtkMenuButton">
+                        <property name="icon-name">open-menu-symbolic</property>
+                        <property name="menu-model">primary_menu</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkBox">
+                    <property name="vexpand">false</property>
+                    <property name="hexpand">false</property>
+                    <property name="halign">GTK_ALIGN_CENTER</property>
+                    <property name="margin-top">10</property>
+                    <child>
+                      <object class="GtkButton" id="button_page1">
+                        <property name="label">New note</property>
+                        <property name="vexpand">false</property>
+                        <property name="hexpand">false</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
               </object>
-            </child>
+            </property>
           </object>
         </child>
-         <child>
-          <object class="GtkStack" id="stack">
-            <child>
-              <object class="GtkStackPage" id="page1">
-                <property name="name">page1</property>
-                <property name="title">In the beginning…</property>
-                <property name="child">
-                  <object class="GtkButton" id="button_page1">
-                    <property name="label">It was dark</property>
+        <child>
+          <object class="GtkStackPage" id="page2">
+            <property name="name">page2</property>
+            <property name="title">editing page</property>
+            <property name="child">
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <child>
+                  <object class="GtkHeaderBar">
+                    <child type="start">
+                      <object class="GtkButton" id="back_button">
+                        <property name="icon-name">go-previous-symbolic</property>
+                      </object>
+                    </child>
                   </object>
-                </property>
-              </object>
-            </child>
-            <child>
-              <object class="GtkStackPage" id="page2">
-                <property name="name">page2</property>
-                <property name="title">ejeje</property>
-                <property name="child">
-                  <object class="GtkButton" id="button_page2">
-                    <property name="label">kekekek</property>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label">Editing page</property>
+                    <property name="vexpand">true</property>
                   </object>
-                </property>
+                </child>
               </object>
-            </child>
+            </property>
           </object>
         </child>
       </object>
