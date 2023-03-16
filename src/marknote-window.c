@@ -29,22 +29,20 @@ struct _MarknoteWindow
 
   /* Template widgets */
   GtkHeaderBar        *header_bar;
-  GtkLabel            *label;
-  GtkButton           *new_windows_button;
+  GtkStack            *stack;
+  GtkStackPage        *page1;
+  GtkStackPage        *page2;
+  GtkButton           *button_page1;
+  GtkButton           *button_page2;
 };
 
 G_DEFINE_FINAL_TYPE (MarknoteWindow, marknote_window, ADW_TYPE_APPLICATION_WINDOW)
 
 static void click_button(GtkWidget *widget, gpointer data){
   MarknoteWindow *current_window = (MarknoteWindow *)data;
-  GtkWindow *window;
 
-
-  window = g_object_new (MARKNOTE_TYPE_EDITOR_WINDOW,
-                           "application", current_window->parent_instance,
-                           NULL);
-
-  gtk_window_present (window);
+  gtk_stack_set_transition_type (GTK_STACK(current_window->stack), GTK_STACK_TRANSITION_TYPE_SLIDE_LEFT);
+  gtk_stack_set_visible_child_name (GTK_STACK(current_window->stack), "page2");
 }
 
 static void marknote_window_class_init (MarknoteWindowClass *klass)
@@ -53,14 +51,18 @@ static void marknote_window_class_init (MarknoteWindowClass *klass)
 
   gtk_widget_class_set_template_from_resource (widget_class, "/com/github/MarkNote/ui/marknote-main-window.ui");
   gtk_widget_class_bind_template_child (widget_class, MarknoteWindow, header_bar);
-  gtk_widget_class_bind_template_child (widget_class, MarknoteWindow, label);
-  gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, new_windows_button);
+  gtk_widget_class_bind_template_child (widget_class, MarknoteWindow, stack);
+  gtk_widget_class_bind_template_child (widget_class, MarknoteWindow, page1);
+  gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, page2);
+  gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, button_page1);
+  gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, button_page2);
 }
 
 static void marknote_window_init (MarknoteWindow *self)
 {
   gtk_widget_init_template (GTK_WIDGET (self));
 
-  g_signal_connect (GTK_BUTTON(self->new_windows_button), "clicked", G_CALLBACK (click_button), (gpointer)self);
+  gtk_stack_set_transition_duration (GTK_STACK(self->stack) , 500);
+  g_signal_connect (GTK_BUTTON(self->button_page1), "clicked", G_CALLBACK (click_button), (gpointer)self);
 }
 
