@@ -28,30 +28,11 @@ struct _MarknoteWindow
 
   /* Template widgets */
   GtkHeaderBar        *header_bar;
-  GtkStack            *stack;
-  GtkStackPage        *page1;
-  GtkStackPage        *page2;
-  GtkButton           *button_page1;
-  GtkButton           *back_button;
   GtkButton           *open_file;
   GtkTextView         *text_view;
 };
 
 G_DEFINE_FINAL_TYPE (MarknoteWindow, marknote_window, ADW_TYPE_APPLICATION_WINDOW)
-
-static void go_to_editor_mode(GtkWidget *widget, gpointer data){
-  MarknoteWindow *current_window = (MarknoteWindow *)data;
-
-  gtk_stack_set_transition_type (GTK_STACK(current_window->stack), GTK_STACK_TRANSITION_TYPE_SLIDE_LEFT);
-  gtk_stack_set_visible_child_name (GTK_STACK(current_window->stack), "page2");
-}
-
-static void go_back_to_main_menu(GtkWidget *widget, gpointer data){
-  MarknoteWindow *current_window = (MarknoteWindow *)data;
-
-  gtk_stack_set_transition_type (GTK_STACK(current_window->stack), GTK_STACK_TRANSITION_TYPE_SLIDE_RIGHT);
-  gtk_stack_set_visible_child_name (GTK_STACK(current_window->stack), "page1");
-}
 
 static void on_open_response(GtkDialog *dialog, int response, gpointer data) {
   char *basename;
@@ -109,11 +90,6 @@ static void marknote_window_class_init (MarknoteWindowClass *klass)
 
   gtk_widget_class_set_template_from_resource (widget_class, "/com/github/MarkNote/ui/marknote-main-window.ui");
   gtk_widget_class_bind_template_child (widget_class, MarknoteWindow, header_bar);
-  gtk_widget_class_bind_template_child (widget_class, MarknoteWindow, stack);
-  gtk_widget_class_bind_template_child (widget_class, MarknoteWindow, page1);
-  gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, page2);
-  gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, button_page1);
-  gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, back_button);
   gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, open_file);
   gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, text_view);
 
@@ -123,9 +99,6 @@ static void marknote_window_init (MarknoteWindow *self)
 {
   gtk_widget_init_template (GTK_WIDGET (self));
 
-  gtk_stack_set_transition_duration (GTK_STACK(self->stack) , 500);
-  g_signal_connect (GTK_BUTTON(self->button_page1), "clicked", G_CALLBACK (go_to_editor_mode), (gpointer)self);
-  g_signal_connect (GTK_BUTTON(self->back_button), "clicked", G_CALLBACK (go_back_to_main_menu), (gpointer)self);
   g_signal_connect (GTK_BUTTON(self->open_file), "clicked", G_CALLBACK (open_file_chooser), (gpointer)self);
 }
 
