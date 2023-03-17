@@ -76,7 +76,7 @@ static void marknote_application_about_action (
   adw_show_about_window (window,
                          "application-name", "marknote",
                          "application-icon", "com.github.MarkNote",
-                         "developer-name", "Noah  Penin",
+                         "developer-name", "Noah Penin",
                          "version", "0.1.0",
                          "developers", developers,
                          "copyright", "© 2023 Noah Penin",
