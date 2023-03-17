@@ -36,14 +36,10 @@
           </object>
         </child>
         <child>
-          <object class="GtkScrolledWindow">
-            <property name="hexpand">True</property>
-            <property name="vexpand">True</property>
-            <child>
-              <object class="GtkTextView" id="text_view">
-              </object>
-            </child>
-          </object>
+          <object class="AdwTabBar" id="tab_bar"></object>
+         </child>
+        <child>
+          <object class="AdwTabView" id="tab_view"></object>
          </child>
       </object>
     </child>

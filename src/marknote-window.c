@@ -29,16 +29,29 @@ struct _MarknoteWindow
   /* Template widgets */
   GtkHeaderBar        *header_bar;
   GtkButton           *open_file;
-  GtkTextView         *text_view;
+  AdwTabView          *tab_view;
+  AdwTabBar           *tab_bar;
 };
 
 G_DEFINE_FINAL_TYPE (MarknoteWindow, marknote_window, ADW_TYPE_APPLICATION_WINDOW)
+
+static void add_tab(MarknoteWindow *window, GtkWidget *text_view) {
+
+  GtkWidget *scrolled_window = gtk_scrolled_window_new ();
+
+  gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW(scrolled_window), GTK_WIDGET(text_view));
+  gtk_widget_set_vexpand (GTK_WIDGET(scrolled_window), true);
+  gtk_widget_set_hexpand(GTK_WIDGET(scrolled_window), true);
+
+  adw_tab_view_append(ADW_TAB_VIEW (window->tab_view), GTK_WIDGET(scrolled_window));
+}
 
 static void on_open_response(GtkDialog *dialog, int response, gpointer data) {
   char *basename;
   char *contents;
   gsize length;
-  GtkTextView *text_view = (GtkTextView *)data;
+  MarknoteWindow *window = (MarknoteWindow *)data;
+  GtkWidget *text_view = gtk_text_view_new ();
 
   if (response == GTK_RESPONSE_ACCEPT)
     {
@@ -54,6 +67,9 @@ static void on_open_response(GtkDialog *dialog, int response, gpointer data) {
 
         buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (text_view));
         gtk_text_buffer_set_text (buffer, contents, length);
+
+        add_tab (window, text_view);
+
         g_free(contents);
       }
 
@@ -62,6 +78,7 @@ static void on_open_response(GtkDialog *dialog, int response, gpointer data) {
 
   gtk_window_destroy (GTK_WINDOW (dialog));
 }
+
 
 static void open_file_chooser(GtkWidget *widget, gpointer data) {
   MarknoteWindow *current_window = (MarknoteWindow *)data;
@@ -81,7 +98,7 @@ static void open_file_chooser(GtkWidget *widget, gpointer data) {
 
   g_signal_connect (dialog, "response",
                     G_CALLBACK (on_open_response),
-                    current_window->text_view);
+                    current_window);
 }
 
 static void marknote_window_class_init (MarknoteWindowClass *klass)
@@ -91,7 +108,8 @@ static void marknote_window_class_init (MarknoteWindowClass *klass)
   gtk_widget_class_set_template_from_resource (widget_class, "/com/github/MarkNote/ui/marknote-main-window.ui");
   gtk_widget_class_bind_template_child (widget_class, MarknoteWindow, header_bar);
   gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, open_file);
-  gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, text_view);
+  gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, tab_view);
+  gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, tab_bar);
 
 }
 
@@ -100,5 +118,7 @@ static void marknote_window_init (MarknoteWindow *self)
   gtk_widget_init_template (GTK_WIDGET (self));
 
   g_signal_connect (GTK_BUTTON(self->open_file), "clicked", G_CALLBACK (open_file_chooser), (gpointer)self);
+
+  adw_tab_bar_set_view (ADW_TAB_BAR(self->tab_bar), ADW_TAB_VIEW (self->tab_view));
 }
 
