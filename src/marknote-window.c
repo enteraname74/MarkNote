@@ -48,7 +48,7 @@ static void add_tab(MarknoteWindow *window, GtkWidget *text_view, char *file_nam
   adw_tab_page_set_title (ADW_TAB_PAGE(tab_page), file_name);
 }
 
-static void on_open_response(GtkDialog *dialog, int response, gpointer data) {
+static void on_open_response(GtkNativeDialog *native, int response, gpointer data) {
   char *file_name;
   char *contents;
   gsize length;
@@ -57,12 +57,11 @@ static void on_open_response(GtkDialog *dialog, int response, gpointer data) {
 
   if (response == GTK_RESPONSE_ACCEPT)
     {
-      GtkFileChooser *chooser = GTK_FILE_CHOOSER (dialog);
+      GtkFileChooser *chooser = GTK_FILE_CHOOSER (native);
 
       g_autoptr(GFile) file = gtk_file_chooser_get_file (chooser);
 
       file_name = g_file_get_basename (file);
-      g_print("%s\n", file_name);
 
       if (g_file_load_contents (file, NULL, &contents, &length, NULL, NULL)) {
         GtkTextBuffer *buffer;
@@ -78,29 +77,24 @@ static void on_open_response(GtkDialog *dialog, int response, gpointer data) {
       g_free(file_name);
     }
 
-  gtk_window_destroy (GTK_WINDOW (dialog));
+  gtk_window_destroy (GTK_WINDOW (native));
 }
 
 
 static void open_file_chooser(GtkWidget *widget, gpointer data) {
   MarknoteWindow *current_window = (MarknoteWindow *)data;
-  GtkWidget *dialog;
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
 
-  dialog = gtk_file_chooser_dialog_new ("Open File",
+  GtkFileChooserNative *native = gtk_file_chooser_native_new ("Open File",
                                         GTK_WINDOW(&current_window->parent_instance),
                                         action,
-                                        "_Cancel",
-                                        GTK_RESPONSE_CANCEL,
                                         "_Open",
-                                        GTK_RESPONSE_ACCEPT,
-                                        NULL);
+                                        "_Cancel");
 
-  gtk_window_present (GTK_WINDOW (dialog));
-
-  g_signal_connect (dialog, "response",
+  g_signal_connect (native, "response",
                     G_CALLBACK (on_open_response),
                     current_window);
+  gtk_native_dialog_show (GTK_NATIVE_DIALOG(native));
 }
 
 static void marknote_window_class_init (MarknoteWindowClass *klass)
