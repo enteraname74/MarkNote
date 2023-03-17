@@ -35,7 +35,7 @@ struct _MarknoteWindow
 
 G_DEFINE_FINAL_TYPE (MarknoteWindow, marknote_window, ADW_TYPE_APPLICATION_WINDOW)
 
-static void add_tab(MarknoteWindow *window, GtkWidget *text_view) {
+static void add_tab(MarknoteWindow *window, GtkWidget *text_view, char *file_name) {
 
   GtkWidget *scrolled_window = gtk_scrolled_window_new ();
 
@@ -43,11 +43,13 @@ static void add_tab(MarknoteWindow *window, GtkWidget *text_view) {
   gtk_widget_set_vexpand (GTK_WIDGET(scrolled_window), true);
   gtk_widget_set_hexpand(GTK_WIDGET(scrolled_window), true);
 
-  adw_tab_view_append(ADW_TAB_VIEW (window->tab_view), GTK_WIDGET(scrolled_window));
+  //adw_tab_view_append(ADW_TAB_VIEW (window->tab_view), GTK_WIDGET(scrolled_window));
+  AdwTabPage *tab_page = adw_tab_view_add_page (ADW_TAB_VIEW (window->tab_view), GTK_WIDGET(scrolled_window), NULL);
+  adw_tab_page_set_title (ADW_TAB_PAGE(tab_page), file_name);
 }
 
 static void on_open_response(GtkDialog *dialog, int response, gpointer data) {
-  char *basename;
+  char *file_name;
   char *contents;
   gsize length;
   MarknoteWindow *window = (MarknoteWindow *)data;
@@ -59,8 +61,8 @@ static void on_open_response(GtkDialog *dialog, int response, gpointer data) {
 
       g_autoptr(GFile) file = gtk_file_chooser_get_file (chooser);
 
-      basename = g_file_get_basename (file);
-      g_print("%s\n", basename);
+      file_name = g_file_get_basename (file);
+      g_print("%s\n", file_name);
 
       if (g_file_load_contents (file, NULL, &contents, &length, NULL, NULL)) {
         GtkTextBuffer *buffer;
@@ -68,12 +70,12 @@ static void on_open_response(GtkDialog *dialog, int response, gpointer data) {
         buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (text_view));
         gtk_text_buffer_set_text (buffer, contents, length);
 
-        add_tab (window, text_view);
+        add_tab (window, text_view, file_name);
 
         g_free(contents);
       }
 
-      g_free(basename);
+      g_free(file_name);
     }
 
   gtk_window_destroy (GTK_WINDOW (dialog));
