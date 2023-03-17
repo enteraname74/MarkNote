@@ -33,6 +33,8 @@ struct _MarknoteWindow
   GtkStackPage        *page2;
   GtkButton           *button_page1;
   GtkButton           *back_button;
+  GtkButton           *open_file;
+  GtkTextView         *text_view;
 };
 
 G_DEFINE_FINAL_TYPE (MarknoteWindow, marknote_window, ADW_TYPE_APPLICATION_WINDOW)
@@ -51,6 +53,56 @@ static void go_back_to_main_menu(GtkWidget *widget, gpointer data){
   gtk_stack_set_visible_child_name (GTK_STACK(current_window->stack), "page1");
 }
 
+static void on_open_response(GtkDialog *dialog, int response, gpointer data) {
+  char *basename;
+  char *contents;
+  gsize length;
+  GtkTextView *text_view = (GtkTextView *)data;
+
+  if (response == GTK_RESPONSE_ACCEPT)
+    {
+      GtkFileChooser *chooser = GTK_FILE_CHOOSER (dialog);
+
+      g_autoptr(GFile) file = gtk_file_chooser_get_file (chooser);
+
+      basename = g_file_get_basename (file);
+      g_print("%s\n", basename);
+
+      if (g_file_load_contents (file, NULL, &contents, &length, NULL, NULL)) {
+        GtkTextBuffer *buffer;
+
+        buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (text_view));
+        gtk_text_buffer_set_text (buffer, contents, length);
+        g_free(contents);
+      }
+
+      g_free(basename);
+    }
+
+  gtk_window_destroy (GTK_WINDOW (dialog));
+}
+
+static void open_file_chooser(GtkWidget *widget, gpointer data) {
+  MarknoteWindow *current_window = (MarknoteWindow *)data;
+  GtkWidget *dialog;
+  GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
+
+  dialog = gtk_file_chooser_dialog_new ("Open File",
+                                        GTK_WINDOW(&current_window->parent_instance),
+                                        action,
+                                        "_Cancel",
+                                        GTK_RESPONSE_CANCEL,
+                                        "_Open",
+                                        GTK_RESPONSE_ACCEPT,
+                                        NULL);
+
+  gtk_window_present (GTK_WINDOW (dialog));
+
+  g_signal_connect (dialog, "response",
+                    G_CALLBACK (on_open_response),
+                    current_window->text_view);
+}
+
 static void marknote_window_class_init (MarknoteWindowClass *klass)
 {
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
@@ -62,6 +114,9 @@ static void marknote_window_class_init (MarknoteWindowClass *klass)
   gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, page2);
   gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, button_page1);
   gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, back_button);
+  gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, open_file);
+  gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, text_view);
+
 }
 
 static void marknote_window_init (MarknoteWindow *self)
@@ -71,5 +126,6 @@ static void marknote_window_init (MarknoteWindow *self)
   gtk_stack_set_transition_duration (GTK_STACK(self->stack) , 500);
   g_signal_connect (GTK_BUTTON(self->button_page1), "clicked", G_CALLBACK (go_to_editor_mode), (gpointer)self);
   g_signal_connect (GTK_BUTTON(self->back_button), "clicked", G_CALLBACK (go_back_to_main_menu), (gpointer)self);
+  g_signal_connect (GTK_BUTTON(self->open_file), "clicked", G_CALLBACK (open_file_chooser), (gpointer)self);
 }
 
