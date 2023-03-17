@@ -200,6 +200,14 @@ static void marknote_window_class_init (MarknoteWindowClass *klass)
 
 }
 
+static gboolean close_page(AdwTabView *view, AdwTabPage *page, gpointer user_data)
+{
+  g_print("Close page !");
+  adw_tab_view_close_page_finish (view, page, !adw_tab_page_get_pinned (page));
+
+  return true;
+}
+
 static void marknote_window_init (MarknoteWindow *self)
 {
   gtk_widget_init_template (GTK_WIDGET (self));
@@ -210,6 +218,7 @@ static void marknote_window_init (MarknoteWindow *self)
 
 
   g_signal_connect (GTK_BUTTON(self->open_file), "clicked", G_CALLBACK (open_file_chooser), (gpointer)self);
+  g_signal_connect (ADW_TAB_VIEW(self->tab_view), "close-page", G_CALLBACK (close_page), NULL);
 
   adw_tab_bar_set_view (ADW_TAB_BAR(self->tab_bar), ADW_TAB_VIEW (self->tab_view));
 }
