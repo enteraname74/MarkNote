@@ -14,17 +14,28 @@
         <child>
           <object class="GtkHeaderBar" id="header_bar">
             <child type="start">
-             <object class="GtkButton" id="open_file">
-                <property name="child">
-                  <object class="AdwButtonContent">
-                    <property name="icon-name">document-open-symbolic</property>
-                    <property name="label" translatable="yes">_Open</property>
-                    <property name="use-underline">True</property>
+              <object class="GtkBox">
+                <property name="orientation">horizontal</property>
+                <property name="spacing">10</property>
+                <child>
+                  <object class="GtkButton" id="open_file">
+                    <property name="child">
+                      <object class="AdwButtonContent">
+                        <property name="icon-name">document-open-symbolic</property>
+                        <property name="label" translatable="yes">_Open</property>
+                        <property name="use-underline">True</property>
+                      </object>
+                    </property>
+                    <style>
+                      <class name="accent_color"/>
+                    </style>
                   </object>
-                </property>
-                <style>
-                  <class name="accent_color"/>
-                </style>
+                </child>
+                <child>
+                  <object class="GtkButton" id="new_file">
+                    <property name="icon-name">document-new-symbolic</property>
+                  </object>
+                </child>
               </object>
             </child>
             <child type="end">

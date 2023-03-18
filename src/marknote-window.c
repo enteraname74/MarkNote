@@ -24,7 +24,7 @@
 
 
 struct FileInfoStruct {
-  gboolean fileAlreadySavedOnce;
+  gboolean is_new_file;
   GFile *file;
   struct FileInfoStruct *next_file;
 };
@@ -38,10 +38,11 @@ struct _MarknoteWindow
   /* Template widgets */
   GtkHeaderBar        *header_bar;
   GtkButton           *open_file;
+  GtkButton           *new_file;
   AdwTabView          *tab_view;
   AdwTabBar           *tab_bar;
 
-  // Notre liste de fichiers ouverts :
+  // Open file list :
   FileList            *file_list;
 };
 
@@ -58,29 +59,35 @@ void show_file_list_infos(FileList *list)
     while(temp != NULL)
       {
 
-        file_name = g_file_get_basename (temp->file);
+        if (temp->file != NULL) {
+          file_name = g_file_get_basename (temp->file);
+        } else {
+          file_name = "Untitled Document";
+        }
+        g_print("-------------\n");
         g_print("%s\n", file_name);
 
-        if (temp->fileAlreadySavedOnce == true)
+        if (temp->is_new_file == true)
           {
-            g_print("already saved once\n");
+            g_print("new file\n");
           }
         else
           {
-            g_print("not saved\n");
+            g_print("not new file\n");
           }
+        g_print("-------------\n");
         temp = temp->next_file;
       }
   }
   g_print("\n");
 }
 
-FileList * add_file_to_file_list(FileList *list, GFile *new_file)
+FileList * add_file_to_file_list(FileList *list, GFile *new_file, gboolean is_new_file)
 {
   FileList *new_elt = malloc(sizeof(*new_elt));
   FileList *temp = list;
 
-  new_elt->fileAlreadySavedOnce = false;
+  new_elt->is_new_file = is_new_file;
   new_elt->next_file = NULL;
   new_elt->file = new_file;
 
@@ -133,7 +140,7 @@ static void on_open_response(GtkNativeDialog *native, int response, gpointer dat
       GtkFileChooser *chooser = GTK_FILE_CHOOSER (native);
 
       GFile * file = gtk_file_chooser_get_file (chooser);
-      window->file_list = add_file_to_file_list (window->file_list, gtk_file_chooser_get_file (chooser));
+      window->file_list = add_file_to_file_list (window->file_list, gtk_file_chooser_get_file (chooser), false);
       file_name = g_file_get_basename (file);
 
       if (g_file_load_contents (file, NULL, &contents, &length, NULL, NULL)) {
@@ -268,6 +275,7 @@ static void marknote_window_class_init (MarknoteWindowClass *klass)
   gtk_widget_class_set_template_from_resource (widget_class, "/com/github/MarkNote/ui/marknote-main-window.ui");
   gtk_widget_class_bind_template_child (widget_class, MarknoteWindow, header_bar);
   gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, open_file);
+  gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, new_file);
   gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, tab_view);
   gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, tab_bar);
 
@@ -281,6 +289,13 @@ static gboolean close_page(AdwTabView *view, AdwTabPage *page, gpointer user_dat
   return true;
 }
 
+static void create_new_file(GtkWidget *self, gpointer data)
+{
+  MarknoteWindow *window = (MarknoteWindow *)data;
+  add_file_to_file_list (window->file_list, NULL, true);
+  add_tab (window, gtk_text_view_new (), "Untitled document");
+}
+
 static void marknote_window_init (MarknoteWindow *self)
 {
   gtk_widget_init_template (GTK_WIDGET (self));
@@ -290,6 +305,7 @@ static void marknote_window_init (MarknoteWindow *self)
   g_action_map_add_action (G_ACTION_MAP (self), G_ACTION (save_action));
 
   g_signal_connect (GTK_BUTTON(self->open_file), "clicked", G_CALLBACK (open_file_chooser), (gpointer)self);
+  g_signal_connect (GTK_BUTTON(self->new_file), "clicked", G_CALLBACK (create_new_file), (gpointer)self);
   g_signal_connect (ADW_TAB_VIEW(self->tab_view), "close-page", G_CALLBACK (close_page), (gpointer)self);
 
   adw_tab_bar_set_view (ADW_TAB_BAR(self->tab_bar), ADW_TAB_VIEW (self->tab_view));
