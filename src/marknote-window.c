@@ -22,6 +22,15 @@
 
 #include "marknote-window.h"
 
+
+struct FileInfoStruct {
+  gboolean fileAlreadySavedOnce;
+  GFile *file;
+  struct FileInfoStruct *next_file;
+};
+
+typedef struct FileInfoStruct FileList;
+
 struct _MarknoteWindow
 {
   AdwApplicationWindow  parent_instance;
@@ -31,13 +40,73 @@ struct _MarknoteWindow
   GtkButton           *open_file;
   AdwTabView          *tab_view;
   AdwTabBar           *tab_bar;
+
+  // Notre liste de fichiers ouverts :
+  FileList            *file_list;
 };
 
 G_DEFINE_FINAL_TYPE (MarknoteWindow, marknote_window, ADW_TYPE_APPLICATION_WINDOW)
 
+void show_file_list_infos(FileList *list)
+{
+  FileList *temp = list;
+  char *file_name;
+
+  if (list == NULL) {
+    g_print("NO ELEMENTS IN LIST\n");
+  } else {
+    while(temp != NULL)
+      {
+
+        file_name = g_file_get_basename (temp->file);
+        g_print("%s\n", file_name);
+
+        if (temp->fileAlreadySavedOnce == true)
+          {
+            g_print("already saved once\n");
+          }
+        else
+          {
+            g_print("not saved\n");
+          }
+        temp = temp->next_file;
+      }
+  }
+  g_print("\n");
+}
+
+FileList * add_file_to_file_list(FileList *list, GFile *new_file)
+{
+  FileList *new_elt = malloc(sizeof(*new_elt));
+  FileList *temp = list;
+
+  new_elt->fileAlreadySavedOnce = false;
+  new_elt->next_file = NULL;
+  new_elt->file = new_file;
+
+  if (list == NULL) {
+    return new_elt;
+  } else {
+    while(temp->next_file != NULL)
+      {
+        temp=temp->next_file;
+      }
+    temp->next_file = new_elt;
+  }
+  return list;
+}
+
+
+void changed (
+  GtkTextBuffer* self,
+  gpointer user_data
+) {
+  g_print("ACTION\n");
+}
 static void add_tab(MarknoteWindow *window, GtkWidget *text_view, char *file_name) {
 
   GtkWidget *scrolled_window = gtk_scrolled_window_new ();
+  GtkTextBuffer *buffer;
 
   gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW(scrolled_window), GTK_WIDGET(text_view));
   gtk_widget_set_vexpand (GTK_WIDGET(scrolled_window), true);
@@ -45,6 +114,10 @@ static void add_tab(MarknoteWindow *window, GtkWidget *text_view, char *file_nam
 
   AdwTabPage *tab_page = adw_tab_view_add_page (ADW_TAB_VIEW (window->tab_view), GTK_WIDGET(scrolled_window), NULL);
   adw_tab_page_set_title (ADW_TAB_PAGE(tab_page), file_name);
+
+  buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW(text_view));
+  g_signal_connect (GTK_TEXT_BUFFER (buffer),"changed", G_CALLBACK (changed), NULL);
+  show_file_list_infos (window->file_list);
 }
 
 static void on_open_response(GtkNativeDialog *native, int response, gpointer data)
@@ -59,8 +132,8 @@ static void on_open_response(GtkNativeDialog *native, int response, gpointer dat
     {
       GtkFileChooser *chooser = GTK_FILE_CHOOSER (native);
 
-      g_autoptr(GFile) file = gtk_file_chooser_get_file (chooser);
-
+      GFile * file = gtk_file_chooser_get_file (chooser);
+      window->file_list = add_file_to_file_list (window->file_list, gtk_file_chooser_get_file (chooser));
       file_name = g_file_get_basename (file);
 
       if (g_file_load_contents (file, NULL, &contents, &length, NULL, NULL)) {
@@ -216,9 +289,8 @@ static void marknote_window_init (MarknoteWindow *self)
   g_signal_connect (save_action, "activate", G_CALLBACK (save_as_file), self);
   g_action_map_add_action (G_ACTION_MAP (self), G_ACTION (save_action));
 
-
   g_signal_connect (GTK_BUTTON(self->open_file), "clicked", G_CALLBACK (open_file_chooser), (gpointer)self);
-  g_signal_connect (ADW_TAB_VIEW(self->tab_view), "close-page", G_CALLBACK (close_page), NULL);
+  g_signal_connect (ADW_TAB_VIEW(self->tab_view), "close-page", G_CALLBACK (close_page), (gpointer)self);
 
   adw_tab_bar_set_view (ADW_TAB_BAR(self->tab_bar), ADW_TAB_VIEW (self->tab_view));
 }
