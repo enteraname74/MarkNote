@@ -53,6 +53,8 @@ void show_file_list_infos(FileList *list)
   FileList *temp = list;
   char *file_name;
 
+  g_print("------- START FILE LIST --------\n");
+
   if (list == NULL) {
     g_print("NO ELEMENTS IN LIST\n");
   } else {
@@ -64,7 +66,6 @@ void show_file_list_infos(FileList *list)
         } else {
           file_name = "Untitled Document";
         }
-        g_print("-------------\n");
         g_print("%s\n", file_name);
 
         if (temp->is_new_file == true)
@@ -79,6 +80,7 @@ void show_file_list_infos(FileList *list)
         temp = temp->next_file;
       }
   }
+  g_print("------- END FILE LIST --------\n");
   g_print("\n");
 }
 
@@ -96,6 +98,7 @@ FileList * add_file_to_file_list(FileList *list, GFile *new_file, gboolean is_ne
   } else {
     while(temp->next_file != NULL)
       {
+        g_print("iter\n");
         temp=temp->next_file;
       }
     temp->next_file = new_elt;
@@ -103,6 +106,25 @@ FileList * add_file_to_file_list(FileList *list, GFile *new_file, gboolean is_ne
   return list;
 }
 
+FileList * delete_from_file_list_at(FileList *list, int pos)
+{
+  FileList *temp = list;
+
+  if (pos == 0)
+    {
+      g_print("pos == 0\n");
+      return list->next_file;
+    }
+  else
+    {
+      for (int i = 0; i < pos - 1; i++)
+        {
+          temp=temp->next_file;
+        }
+      temp->next_file = temp->next_file->next_file;
+      return list;
+    }
+}
 
 void changed (
   GtkTextBuffer* self,
@@ -283,16 +305,23 @@ static void marknote_window_class_init (MarknoteWindowClass *klass)
 
 static gboolean close_page(AdwTabView *view, AdwTabPage *page, gpointer user_data)
 {
+  MarknoteWindow *window = (MarknoteWindow *)user_data;
   g_print("Close page !");
+  g_print("Pos of deleted page : %d\n",
+          adw_tab_view_get_page_position (view, page)
+          );
+  int page_pos;
+  page_pos = adw_tab_view_get_page_position (view, page);
+  window->file_list = delete_from_file_list_at (window->file_list, page_pos);
+  show_file_list_infos (window->file_list);
   adw_tab_view_close_page_finish (view, page, !adw_tab_page_get_pinned (page));
-
   return true;
 }
 
 static void create_new_file(GtkWidget *self, gpointer data)
 {
   MarknoteWindow *window = (MarknoteWindow *)data;
-  add_file_to_file_list (window->file_list, NULL, true);
+  window->file_list = add_file_to_file_list (window->file_list, NULL, true);
   add_tab (window, gtk_text_view_new (), "Untitled document");
 }
 
