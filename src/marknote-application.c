@@ -114,5 +114,11 @@ static void marknote_application_init (MarknoteApplication *self) {
                                            "<Ctrl><Shift>s",
                                            NULL,
                                          });
+  gtk_application_set_accels_for_action (GTK_APPLICATION (self),
+                                         "win.save",
+                                         (const char *[]) {
+                                           "<Ctrl>s",
+                                           NULL,
+                                         });
 }
 

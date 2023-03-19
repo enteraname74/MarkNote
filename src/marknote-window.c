@@ -44,6 +44,7 @@ struct _MarknoteWindow
 
   // Open file list :
   FileList            *file_list;
+  gboolean            are_file_shortcuts_enabled;
 };
 
 G_DEFINE_FINAL_TYPE (MarknoteWindow, marknote_window, ADW_TYPE_APPLICATION_WINDOW)
@@ -126,60 +127,35 @@ FileList * delete_from_file_list_at(FileList *list, int pos)
     }
 }
 
+FileList * file_list_get_file_info_from_pos(FileList *list, int pos)
+{
+  FileList *temp = list;
+
+  for (int i = 0; i < pos; i++)
+    {
+      temp=temp->next_file;
+    }
+  return temp;
+}
+
+int file_list_get_length(FileList *list)
+{
+  FileList *temp = list;
+  int length = 0;
+
+  while (temp != NULL) {
+    length++;
+    temp = temp->next_file;
+  }
+
+  return length;
+}
+
 void changed (
   GtkTextBuffer* self,
   gpointer user_data
 ) {
   g_print("ACTION\n");
-}
-static void add_tab(MarknoteWindow *window, GtkWidget *text_view, char *file_name) {
-
-  GtkWidget *scrolled_window = gtk_scrolled_window_new ();
-  GtkTextBuffer *buffer;
-
-  gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW(scrolled_window), GTK_WIDGET(text_view));
-  gtk_widget_set_vexpand (GTK_WIDGET(scrolled_window), true);
-  gtk_widget_set_hexpand(GTK_WIDGET(scrolled_window), true);
-
-  AdwTabPage *tab_page = adw_tab_view_add_page (ADW_TAB_VIEW (window->tab_view), GTK_WIDGET(scrolled_window), NULL);
-  adw_tab_page_set_title (ADW_TAB_PAGE(tab_page), file_name);
-
-  buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW(text_view));
-  g_signal_connect (GTK_TEXT_BUFFER (buffer),"changed", G_CALLBACK (changed), NULL);
-  show_file_list_infos (window->file_list);
-}
-
-static void on_open_response(GtkNativeDialog *native, int response, gpointer data)
-{
-  char *file_name;
-  char *contents;
-  gsize length;
-  MarknoteWindow *window = (MarknoteWindow *)data;
-  GtkWidget *text_view = gtk_text_view_new ();
-
-  if (response == GTK_RESPONSE_ACCEPT)
-    {
-      GtkFileChooser *chooser = GTK_FILE_CHOOSER (native);
-
-      GFile * file = gtk_file_chooser_get_file (chooser);
-      window->file_list = add_file_to_file_list (window->file_list, gtk_file_chooser_get_file (chooser), false);
-      file_name = g_file_get_basename (file);
-
-      if (g_file_load_contents (file, NULL, &contents, &length, NULL, NULL)) {
-        GtkTextBuffer *buffer;
-
-        buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (text_view));
-        gtk_text_buffer_set_text (buffer, contents, length);
-
-        add_tab (window, text_view, file_name);
-
-        g_free(contents);
-      }
-
-      g_free(file_name);
-    }
-
-  g_object_unref(native);
 }
 
 static void save_file_complete (GObject *source_object,
@@ -255,6 +231,17 @@ static void on_save_response(GtkNativeDialog *native, int response, MarknoteWind
     {
       g_autoptr (GFile) file = gtk_file_chooser_get_file (GTK_FILE_CHOOSER (native));
 
+      // Search the current page shown :
+      AdwTabPage *current_page = adw_tab_view_get_selected_page(ADW_TAB_VIEW(self->tab_view));
+      adw_tab_page_set_title (ADW_TAB_PAGE(current_page), g_file_get_basename (file));
+
+      int pos = adw_tab_view_get_page_position (ADW_TAB_VIEW(self->tab_view), ADW_TAB_PAGE(current_page));
+
+      // Update file informations :
+      FileList *file_info = file_list_get_file_info_from_pos (self->file_list, pos);
+      file_info->file = gtk_file_chooser_get_file (GTK_FILE_CHOOSER (native));
+      file_info->is_new_file = false;
+
       save_file(self, file);
     }
 
@@ -272,6 +259,92 @@ static void save_as_file(GAction *action G_GNUC_UNUSED,
                                                               "_Cancel");
   g_signal_connect (native, "response", G_CALLBACK(on_save_response), self);
   gtk_native_dialog_show(GTK_NATIVE_DIALOG(native));
+}
+
+static void try_rapid_save(GAction *action  G_GNUC_UNUSED,
+                           GVariant *param  G_GNUC_UNUSED,
+                           MarknoteWindow  *self)
+{
+  // Search the current page shown :
+  AdwTabPage *current_page = adw_tab_view_get_selected_page(ADW_TAB_VIEW(self->tab_view));
+  int pos = adw_tab_view_get_page_position (ADW_TAB_VIEW(self->tab_view), ADW_TAB_PAGE(current_page));
+
+  FileList *file_info = file_list_get_file_info_from_pos (self->file_list, pos);
+
+  if (file_info->is_new_file)
+    {
+      save_as_file (NULL, NULL, self);
+    }
+  else
+    {
+      save_file (self, file_info->file);
+    }
+}
+
+static void add_tab(MarknoteWindow *window, GtkWidget *text_view, char *file_name) {
+
+  GtkWidget *scrolled_window = gtk_scrolled_window_new ();
+  GtkTextBuffer *buffer;
+
+  gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW(scrolled_window), GTK_WIDGET(text_view));
+  gtk_widget_set_vexpand (GTK_WIDGET(scrolled_window), true);
+  gtk_widget_set_hexpand(GTK_WIDGET(scrolled_window), true);
+
+  AdwTabPage *tab_page = adw_tab_view_add_page (ADW_TAB_VIEW (window->tab_view), GTK_WIDGET(scrolled_window), NULL);
+  adw_tab_page_set_title (ADW_TAB_PAGE(tab_page), file_name);
+
+  buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW(text_view));
+  g_signal_connect (GTK_TEXT_BUFFER (buffer),"changed", G_CALLBACK (changed), NULL);
+  show_file_list_infos (window->file_list);
+
+  // Enable shortcuts if previously disabled :
+  if (window->are_file_shortcuts_enabled == false)
+    {
+      // Save action :
+      g_autoptr (GSimpleAction) save_action = g_simple_action_new ("save", NULL);
+      g_signal_connect (save_action, "activate", G_CALLBACK (try_rapid_save), window);
+      g_action_map_add_action (G_ACTION_MAP (window), G_ACTION (save_action));
+
+      // Save as action :
+      g_autoptr (GSimpleAction) save_as_action = g_simple_action_new ("save-as", NULL);
+      g_signal_connect (save_as_action, "activate", G_CALLBACK (save_as_file), window);
+      g_action_map_add_action (G_ACTION_MAP (window), G_ACTION (save_as_action));
+
+      window->are_file_shortcuts_enabled = true;
+    }
+}
+
+static void on_open_response(GtkNativeDialog *native, int response, gpointer data)
+{
+  char *file_name;
+  char *contents;
+  gsize length;
+  MarknoteWindow *window = (MarknoteWindow *)data;
+  GtkWidget *text_view = gtk_text_view_new ();
+
+  if (response == GTK_RESPONSE_ACCEPT)
+    {
+      GtkFileChooser *chooser = GTK_FILE_CHOOSER (native);
+
+      GFile * file = gtk_file_chooser_get_file (chooser);
+      window->file_list = add_file_to_file_list (window->file_list, gtk_file_chooser_get_file (chooser), false);
+      file_name = g_file_get_basename (file);
+
+      if (g_file_load_contents (file, NULL, &contents, &length, NULL, NULL)) {
+        GtkTextBuffer *buffer;
+
+        buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (text_view));
+        gtk_text_buffer_set_text (buffer, contents, length);
+
+        add_tab (window, text_view, file_name);
+
+        g_free(contents);
+      }
+
+      g_free(file_name);
+    }
+
+  g_object_unref(native);
 }
 
 static void open_file_chooser(GtkWidget *widget, gpointer data) {
@@ -315,6 +388,14 @@ static gboolean close_page(AdwTabView *view, AdwTabPage *page, gpointer user_dat
   window->file_list = delete_from_file_list_at (window->file_list, page_pos);
   show_file_list_infos (window->file_list);
   adw_tab_view_close_page_finish (view, page, !adw_tab_page_get_pinned (page));
+
+  // Disable shortcuts and save options if no files are left open :
+  if (file_list_get_length (window->file_list) == 1)
+    {
+      g_action_map_remove_action (G_ACTION_MAP (window), "save-as");
+      window->are_file_shortcuts_enabled = false;
+    }
+
   return true;
 }
 
@@ -325,25 +406,16 @@ static void create_new_file(GtkWidget *self, gpointer data)
   add_tab (window, gtk_text_view_new (), "Untitled document");
 }
 
-static void save_shortcut(GtkWidget *self, gpointer data)
-{
-  g_print("SAVE SHORTCUT ACTIONNED\n");
-}
-
 static void marknote_window_init (MarknoteWindow *self)
 {
   gtk_widget_init_template (GTK_WIDGET (self));
 
-  g_autoptr (GSimpleAction) save_action = g_simple_action_new ("save-as", NULL);
-  g_signal_connect (save_action, "activate", G_CALLBACK (save_as_file), self);
-  g_action_map_add_action (G_ACTION_MAP (self), G_ACTION (save_action));
+  // Initialize shorcuts to be disabled (no files are open at the beginning) :
+  self->are_file_shortcuts_enabled = false;
 
   g_signal_connect (GTK_BUTTON(self->open_file), "clicked", G_CALLBACK (open_file_chooser), (gpointer)self);
   g_signal_connect (GTK_BUTTON(self->new_file), "clicked", G_CALLBACK (create_new_file), (gpointer)self);
   g_signal_connect (ADW_TAB_VIEW(self->tab_view), "close-page", G_CALLBACK (close_page), (gpointer)self);
-
-  //Listener for Ctrl+S (save) action :
-  //gtk_shortcut_new (gtk_shortcut_trigger_parse_string ("<Control>S"), GTK_CALLBACK_ACTION(save_shortcut));
 
   adw_tab_bar_set_view (ADW_TAB_BAR(self->tab_bar), ADW_TAB_VIEW (self->tab_view));
 }
