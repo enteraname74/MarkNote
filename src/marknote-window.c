@@ -406,6 +406,14 @@ static void create_new_file(GtkWidget *self, gpointer data)
   add_tab (window, gtk_text_view_new (), "Untitled document");
 }
 
+static void page_reordered (AdwTabView* self,
+                            AdwTabPage* page,
+                            gint position,
+                            gpointer user_data)
+{
+  g_print("New position for page : %d\n", position);
+}
+
 static void marknote_window_init (MarknoteWindow *self)
 {
   gtk_widget_init_template (GTK_WIDGET (self));
@@ -416,6 +424,7 @@ static void marknote_window_init (MarknoteWindow *self)
   g_signal_connect (GTK_BUTTON(self->open_file), "clicked", G_CALLBACK (open_file_chooser), (gpointer)self);
   g_signal_connect (GTK_BUTTON(self->new_file), "clicked", G_CALLBACK (create_new_file), (gpointer)self);
   g_signal_connect (ADW_TAB_VIEW(self->tab_view), "close-page", G_CALLBACK (close_page), (gpointer)self);
+  g_signal_connect (ADW_TAB_VIEW(self->tab_view), "page-reordered", G_CALLBACK (page_reordered), (gpointer)self);
 
   adw_tab_bar_set_view (ADW_TAB_BAR(self->tab_bar), ADW_TAB_VIEW (self->tab_view));
 }
