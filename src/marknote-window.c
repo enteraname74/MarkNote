@@ -144,6 +144,7 @@ static void save_as_file(GAction *action G_GNUC_UNUSED,
                          MarknoteWindow *self)
 {
   GtkFileChooser *chooser;
+  GtkFileFilter *filter;
   FileList * current_file_info;
   GtkFileChooserNative *native = gtk_file_chooser_native_new ("Save File As",
                                                               GTK_WINDOW(self),
@@ -151,8 +152,14 @@ static void save_as_file(GAction *action G_GNUC_UNUSED,
                                                               "_Save",
                                                               "_Cancel");
 
+
   // Specify name of current file if it isn't a new one :
   chooser = GTK_FILE_CHOOSER(native);
+  filter = gtk_file_filter_new();
+  gtk_file_filter_add_pattern (GTK_FILE_FILTER(filter), "*.txt");
+  gtk_file_filter_add_pattern (GTK_FILE_FILTER(filter), "*.md");
+  gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (chooser), GTK_FILE_FILTER (filter));
+
   current_file_info = file_list_get_file_infos_from_tab_view (self->file_list, self->tab_view);
   if (current_file_info->is_new_file)
     {
@@ -277,12 +284,20 @@ static void on_open_response(GtkNativeDialog *native, int response, gpointer dat
 static void open_file_chooser(GtkWidget *widget, gpointer data) {
   MarknoteWindow *current_window = (MarknoteWindow *)data;
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
+  GtkFileChooser *chooser;
+  GtkFileFilter* filter;
 
   GtkFileChooserNative *native = gtk_file_chooser_native_new ("Open File",
                                         GTK_WINDOW(&current_window->parent_instance),
                                         action,
                                         "_Open",
                                         "_Cancel");
+
+  chooser = GTK_FILE_CHOOSER(native);
+  filter = gtk_file_filter_new();
+  gtk_file_filter_add_pattern (GTK_FILE_FILTER(filter), "*.txt");
+  gtk_file_filter_add_pattern (GTK_FILE_FILTER(filter), "*.md");
+  gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (chooser), GTK_FILE_FILTER (filter));
 
   g_signal_connect (native, "response",
                     G_CALLBACK (on_open_response),
