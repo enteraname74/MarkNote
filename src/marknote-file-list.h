@@ -36,7 +36,9 @@ struct FileInfoStruct {
 void show_file_list_infos(FileList *list);
 FileList * file_list_add_file(FileList *list, GFile *new_file, gboolean is_new_file);
 FileList * file_list_delete_at(FileList *list, int pos);
+
 FileList * file_list_get_file_info_from_pos(FileList *list, int pos);
+FileList * file_list_get_file_infos_from_tab_view(FileList *list, AdwTabView *tab_view);
 int file_list_get_length(FileList *list);
 
 G_END_DECLS

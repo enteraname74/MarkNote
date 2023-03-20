@@ -121,3 +121,10 @@ int file_list_get_length(FileList *list)
 
   return length;
 }
+
+FileList * file_list_get_file_infos_from_tab_view(FileList *list, AdwTabView *tab_view)
+{
+  AdwTabPage *current_page = adw_tab_view_get_selected_page (tab_view);
+  int page_pos = adw_tab_view_get_page_position (tab_view, current_page);
+  return file_list_get_file_info_from_pos(list, page_pos);
+}
