@@ -48,10 +48,18 @@
         </child>
         <child>
           <object class="AdwTabBar" id="tab_bar"></object>
-         </child>
+        </child>
         <child>
           <object class="AdwTabView" id="tab_view"></object>
-         </child>
+        </child>
+        <child>
+          <object class="AdwStatusPage" id="status_page">
+            <property name="description">Please open or create a new file to edit</property>
+            <property name="title">No files open !</property>
+            <property name="icon-name">edit-find-symbolic</property>
+            <property name="vexpand">true</property>
+          </object>
+        </child>
       </object>
     </child>
   </template>

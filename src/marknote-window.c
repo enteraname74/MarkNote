@@ -33,6 +33,7 @@ struct _MarknoteWindow
   GtkButton           *new_file;
   AdwTabView          *tab_view;
   AdwTabBar           *tab_bar;
+  AdwStatusPage       *status_page;
 
   // Open file list :
   FileList            *file_list;
@@ -209,6 +210,9 @@ static void try_rapid_save(GAction *action  G_GNUC_UNUSED,
 static void add_tab(MarknoteWindow *window, GtkWidget *text_view, char *file_name)
 {
 
+  // First, we remove the status page :
+  gtk_widget_set_visible (GTK_WIDGET (window->status_page), false);
+
   GtkWidget *scrolled_window = gtk_scrolled_window_new ();
   GtkTextBuffer *buffer;
 
@@ -325,6 +329,7 @@ static void marknote_window_class_init (MarknoteWindowClass *klass)
   gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, new_file);
   gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, tab_view);
   gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, tab_bar);
+  gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, status_page);
 
 }
 
