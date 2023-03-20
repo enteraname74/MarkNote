@@ -21,8 +21,13 @@
 #pragma once
 
 #include <adwaita.h>
-#include "marknote-types.h"
 
 G_BEGIN_DECLS
+
+#define MARKNOTE_TYPE_APPLICATION (marknote_application_get_type())
+G_DECLARE_FINAL_TYPE (MarknoteApplication, marknote_application, MARKNOTE, APPLICATION, AdwApplication)
+
+#define MARKNOTE_TYPE_WINDOW (marknote_window_get_type())
+G_DECLARE_FINAL_TYPE (MarknoteWindow, marknote_window, MARKNOTE, WINDOW, AdwApplicationWindow)
 
 G_END_DECLS

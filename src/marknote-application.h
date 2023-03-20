@@ -21,12 +21,9 @@
 #pragma once
 
 #include <adwaita.h>
+#include "marknote-types.h"
 
 G_BEGIN_DECLS
-
-#define MARKNOTE_TYPE_APPLICATION (marknote_application_get_type())
-
-G_DECLARE_FINAL_TYPE (MarknoteApplication, marknote_application, MARKNOTE, APPLICATION, AdwApplication)
 
 MarknoteApplication *marknote_application_new (const char        *application_id,
                                                GApplicationFlags  flags);

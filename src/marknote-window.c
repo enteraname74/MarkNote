@@ -21,15 +21,7 @@
 #include "config.h"
 
 #include "marknote-window.h"
-
-
-struct FileInfoStruct {
-  gboolean is_new_file;
-  GFile *file;
-  struct FileInfoStruct *next_file;
-};
-
-typedef struct FileInfoStruct FileList;
+#include "marknote-file-list.h"
 
 struct _MarknoteWindow
 {
@@ -48,108 +40,6 @@ struct _MarknoteWindow
 };
 
 G_DEFINE_FINAL_TYPE (MarknoteWindow, marknote_window, ADW_TYPE_APPLICATION_WINDOW)
-
-void show_file_list_infos(FileList *list)
-{
-  FileList *temp = list;
-  char *file_name;
-
-  g_print("------- START FILE LIST --------\n");
-
-  if (list == NULL) {
-    g_print("NO ELEMENTS IN LIST\n");
-  } else {
-    while(temp != NULL)
-      {
-
-        if (temp->file != NULL) {
-          file_name = g_file_get_basename (temp->file);
-        } else {
-          file_name = "Untitled Document";
-        }
-        g_print("%s\n", file_name);
-
-        if (temp->is_new_file == true)
-          {
-            g_print("new file\n");
-          }
-        else
-          {
-            g_print("not new file\n");
-          }
-        g_print("-------------\n");
-        temp = temp->next_file;
-      }
-  }
-  g_print("------- END FILE LIST --------\n");
-  g_print("\n");
-}
-
-FileList * add_file_to_file_list(FileList *list, GFile *new_file, gboolean is_new_file)
-{
-  FileList *new_elt = malloc(sizeof(*new_elt));
-  FileList *temp = list;
-
-  new_elt->is_new_file = is_new_file;
-  new_elt->next_file = NULL;
-  new_elt->file = new_file;
-
-  if (list == NULL) {
-    return new_elt;
-  } else {
-    while(temp->next_file != NULL)
-      {
-        g_print("iter\n");
-        temp=temp->next_file;
-      }
-    temp->next_file = new_elt;
-  }
-  return list;
-}
-
-FileList * delete_from_file_list_at(FileList *list, int pos)
-{
-  FileList *temp = list;
-
-  if (pos == 0)
-    {
-      g_print("pos == 0\n");
-      return list->next_file;
-    }
-  else
-    {
-      for (int i = 0; i < pos - 1; i++)
-        {
-          temp=temp->next_file;
-        }
-      temp->next_file = temp->next_file->next_file;
-      return list;
-    }
-}
-
-FileList * file_list_get_file_info_from_pos(FileList *list, int pos)
-{
-  FileList *temp = list;
-
-  for (int i = 0; i < pos; i++)
-    {
-      temp=temp->next_file;
-    }
-  return temp;
-}
-
-int file_list_get_length(FileList *list)
-{
-  FileList *temp = list;
-  int length = 0;
-
-  while (temp != NULL) {
-    length++;
-    temp = temp->next_file;
-  }
-
-  return length;
-}
 
 void changed (
   GtkTextBuffer* self,
@@ -327,7 +217,7 @@ static void on_open_response(GtkNativeDialog *native, int response, gpointer dat
       GtkFileChooser *chooser = GTK_FILE_CHOOSER (native);
 
       GFile * file = gtk_file_chooser_get_file (chooser);
-      window->file_list = add_file_to_file_list (window->file_list, gtk_file_chooser_get_file (chooser), false);
+      window->file_list = file_list_add_file (window->file_list, gtk_file_chooser_get_file (chooser), false);
       file_name = g_file_get_basename (file);
 
       if (g_file_load_contents (file, NULL, &contents, &length, NULL, NULL)) {
@@ -385,7 +275,7 @@ static gboolean close_page(AdwTabView *view, AdwTabPage *page, gpointer user_dat
           );
   int page_pos;
   page_pos = adw_tab_view_get_page_position (view, page);
-  window->file_list = delete_from_file_list_at (window->file_list, page_pos);
+  window->file_list = file_list_delete_at (window->file_list, page_pos);
   show_file_list_infos (window->file_list);
   adw_tab_view_close_page_finish (view, page, !adw_tab_page_get_pinned (page));
 
@@ -402,7 +292,7 @@ static gboolean close_page(AdwTabView *view, AdwTabPage *page, gpointer user_dat
 static void create_new_file(GtkWidget *self, gpointer data)
 {
   MarknoteWindow *window = (MarknoteWindow *)data;
-  window->file_list = add_file_to_file_list (window->file_list, NULL, true);
+  window->file_list = file_list_add_file (window->file_list, NULL, true);
   add_tab (window, gtk_text_view_new (), "Untitled document");
 }
 
@@ -418,7 +308,7 @@ static void marknote_window_init (MarknoteWindow *self)
 {
   gtk_widget_init_template (GTK_WIDGET (self));
 
-  // Initialize shorcuts to be disabled (no files are open at the beginning) :
+  // Initialize shortcuts to be disabled (no files are open at the beginning) :
   self->are_file_shortcuts_enabled = false;
 
   g_signal_connect (GTK_BUTTON(self->open_file), "clicked", G_CALLBACK (open_file_chooser), (gpointer)self);
@@ -428,4 +318,3 @@ static void marknote_window_init (MarknoteWindow *self)
 
   adw_tab_bar_set_view (ADW_TAB_BAR(self->tab_bar), ADW_TAB_VIEW (self->tab_view));
 }
-

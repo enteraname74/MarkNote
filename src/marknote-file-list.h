@@ -25,4 +25,18 @@
 
 G_BEGIN_DECLS
 
+typedef struct FileInfoStruct FileList;
+
+struct FileInfoStruct {
+  gboolean is_new_file;
+  GFile *file;
+  struct FileInfoStruct *next_file;
+};
+
+void show_file_list_infos(FileList *list);
+FileList * file_list_add_file(FileList *list, GFile *new_file, gboolean is_new_file);
+FileList * file_list_delete_at(FileList *list, int pos);
+FileList * file_list_get_file_info_from_pos(FileList *list, int pos);
+int file_list_get_length(FileList *list);
+
 G_END_DECLS

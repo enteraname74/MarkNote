@@ -1,7 +1,8 @@
 marknote_sources = [
   'main.c',
   'marknote-application.c',
-  'marknote-window.c'
+  'marknote-window.c',
+  'marknote-file-list.c'
 ]
 
 marknote_deps = [
