@@ -128,3 +128,45 @@ FileList * file_list_get_file_infos_from_tab_view(FileList *list, AdwTabView *ta
   int page_pos = adw_tab_view_get_page_position (tab_view, current_page);
   return file_list_get_file_info_from_pos(list, page_pos);
 }
+
+gboolean file_list_search_file(FileList *list, GFile *file)
+{
+  FileList *temp = list;
+
+  while(temp != NULL)
+    {
+      if (!(temp->is_new_file))
+        {
+          if (strcmp(
+            g_file_get_path (file), g_file_get_path (temp->file)) == 0)
+            {
+              return true;
+            }
+        }
+      temp=temp->next_file;
+    }
+
+  return false;
+}
+
+int file_list_get_pos_of_file_from_path(FileList *list, char * path)
+{
+  FileList *temp = list;
+  int i = 0;
+
+  while(temp != NULL)
+    {
+      if (!(temp->is_new_file))
+        {
+          if (strcmp(
+            path, g_file_get_path (temp->file)) == 0)
+          {
+            return i;
+          }
+        }
+      i++;
+      temp=temp->next_file;
+    }
+
+  return -1;
+}

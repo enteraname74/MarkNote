@@ -39,6 +39,8 @@ FileList * file_list_delete_at(FileList *list, int pos);
 
 FileList * file_list_get_file_info_from_pos(FileList *list, int pos);
 FileList * file_list_get_file_infos_from_tab_view(FileList *list, AdwTabView *tab_view);
+gboolean file_list_search_file(FileList *list, GFile *file);
 int file_list_get_length(FileList *list);
+int file_list_get_pos_of_file_from_path(FileList *list, char * path);
 
 G_END_DECLS

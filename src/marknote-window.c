@@ -239,6 +239,21 @@ static void on_open_response(GtkNativeDialog *native, int response, gpointer dat
       GtkFileChooser *chooser = GTK_FILE_CHOOSER (native);
 
       GFile * file = gtk_file_chooser_get_file (chooser);
+
+      // If opened file is already in our list of files, we simply put focus on the file :
+      if (file_list_search_file (window->file_list, file))
+        {
+          g_print("File in list !\n");
+          int page_position = file_list_get_pos_of_file_from_path (window->file_list, g_file_get_path (file));
+          if (page_position != -1)
+            {
+              g_print("Page position : %d\n", page_position);
+              AdwTabPage *new_selected_page = adw_tab_view_get_nth_page (window->tab_view, page_position);
+              adw_tab_view_set_selected_page (window->tab_view, new_selected_page);
+              return;
+            }
+        }
+
       window->file_list = file_list_add_file (window->file_list, gtk_file_chooser_get_file (chooser), false);
       file_name = g_file_get_basename (file);
 
