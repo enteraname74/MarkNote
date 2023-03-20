@@ -45,13 +45,20 @@ void changed (
   GtkTextBuffer* self,
   gpointer user_data
 ) {
+  AdwTabPage *current_page;
   g_print("ACTION\n");
+  MarknoteWindow *window = (MarknoteWindow *)user_data;
+  current_page = adw_tab_view_get_selected_page (window->tab_view);
+
+  adw_tab_page_set_icon (current_page, g_themed_icon_new("emblem-important-symbolic"));
+
 }
 
 static void save_file_complete (GObject *source_object,
                                 GAsyncResult *result,
                                 gpointer user_data)
 {
+  MarknoteWindow *window = (MarknoteWindow *)user_data;
   GFile *file = G_FILE (source_object);
 
   g_autoptr (GError) error = NULL;
@@ -72,11 +79,26 @@ static void save_file_complete (GObject *source_object,
       display_name = g_file_get_basename (file);
     }
 
-  if (error != NULL) {
+  if (error != NULL)
+    {
     g_printerr("Unable to save “%s”: %s\n",
                display_name,
                error->message);
-  }
+    }
+  else
+    {
+      // Update file name in UI :
+      AdwTabPage *current_page = adw_tab_view_get_selected_page(ADW_TAB_VIEW(window->tab_view));
+      adw_tab_page_set_icon (current_page, NULL);
+      adw_tab_page_set_title (ADW_TAB_PAGE(current_page), display_name);
+
+      int pos = adw_tab_view_get_page_position (ADW_TAB_VIEW(window->tab_view), ADW_TAB_PAGE(current_page));
+
+      // Update file information :
+      FileList *file_info = file_list_get_file_info_from_pos (window->file_list, pos);
+      file_info->file = file;
+      file_info->is_new_file = false;
+    }
 }
 
 static void save_file(MarknoteWindow *self, GFile *file)
@@ -120,18 +142,6 @@ static void on_save_response(GtkNativeDialog *native, int response, MarknoteWind
   if (response == GTK_RESPONSE_ACCEPT)
     {
       GFile * file = gtk_file_chooser_get_file (GTK_FILE_CHOOSER (native));
-
-      // Search the current page shown :
-
-      AdwTabPage *current_page = adw_tab_view_get_selected_page(ADW_TAB_VIEW(self->tab_view));
-      adw_tab_page_set_title (ADW_TAB_PAGE(current_page), g_file_get_basename (file));
-
-      int pos = adw_tab_view_get_page_position (ADW_TAB_VIEW(self->tab_view), ADW_TAB_PAGE(current_page));
-
-      // Update file information :
-      FileList *file_info = file_list_get_file_info_from_pos (self->file_list, pos);
-      file_info->file = gtk_file_chooser_get_file (GTK_FILE_CHOOSER (native));
-      file_info->is_new_file = false;
 
       save_file(self, file);
     }
@@ -210,7 +220,7 @@ static void add_tab(MarknoteWindow *window, GtkWidget *text_view, char *file_nam
   adw_tab_page_set_title (ADW_TAB_PAGE(tab_page), file_name);
 
   buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW(text_view));
-  g_signal_connect (GTK_TEXT_BUFFER (buffer),"changed", G_CALLBACK (changed), NULL);
+  g_signal_connect (GTK_TEXT_BUFFER (buffer),"changed", G_CALLBACK (changed), (gpointer)window);
   show_file_list_infos (window->file_list);
 
   // Enable shortcuts if previously disabled :
