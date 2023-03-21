@@ -23,6 +23,8 @@
 #include "marknote-window.h"
 #include "marknote-file-list.h"
 
+const char DEFAULT_FILE_NAME[]= "Untitled document";
+
 struct _MarknoteWindow
 {
   AdwApplicationWindow  parent_instance;
@@ -42,17 +44,25 @@ struct _MarknoteWindow
 
 G_DEFINE_FINAL_TYPE (MarknoteWindow, marknote_window, ADW_TYPE_APPLICATION_WINDOW)
 
-void changed (
-  GtkTextBuffer* self,
-  gpointer user_data
-) {
+void changed (GtkTextBuffer* self, gpointer user_data) {
   AdwTabPage *current_page;
-  g_print("ACTION\n");
+  FileList *file_info;
   MarknoteWindow *window = (MarknoteWindow *)user_data;
+
   current_page = adw_tab_view_get_selected_page (window->tab_view);
+  int page_pos = adw_tab_view_get_page_position (window->tab_view, current_page);
+  file_info = file_list_get_file_info_from_pos (window->file_list, page_pos);
+
 
   adw_tab_page_set_icon (current_page, g_themed_icon_new("emblem-important-symbolic"));
-
+  if (file_info->file != NULL)
+    {
+      header_bar_change_title_widget (window->header_bar, g_file_get_basename(file_info->file), true);
+    }
+  else
+    {
+      header_bar_change_title_widget (window->header_bar, (char *)"Untitled document", true);
+    }
 }
 
 static void save_file_complete (GObject *source_object,
@@ -90,6 +100,7 @@ static void save_file_complete (GObject *source_object,
     {
       // Update file name in UI :
       AdwTabPage *current_page = adw_tab_view_get_selected_page(ADW_TAB_VIEW(window->tab_view));
+      header_bar_change_title_widget (window->header_bar, display_name, false);
       adw_tab_page_set_icon (current_page, NULL);
       adw_tab_page_set_title (ADW_TAB_PAGE(current_page), display_name);
 
@@ -174,7 +185,7 @@ static void save_as_file(GAction *action G_GNUC_UNUSED,
   current_file_info = file_list_get_file_infos_from_tab_view (self->file_list, self->tab_view);
   if (current_file_info->is_new_file)
     {
-      gtk_file_chooser_set_current_name (chooser, "Untitled document");
+      gtk_file_chooser_set_current_name (chooser, DEFAULT_FILE_NAME);
     }
   else
     {
@@ -245,6 +256,9 @@ static void add_tab(MarknoteWindow *window, GtkWidget *text_view, char *file_nam
 
   // We change the current selected page to the new one :
   adw_tab_view_set_selected_page (window->tab_view, tab_page);
+
+  // We update the header_bar to show the current state of the file :
+  header_bar_change_title_widget (window->header_bar, file_name, false);
 }
 
 static void on_open_response(GtkNativeDialog *native, int response, gpointer data)
@@ -337,7 +351,7 @@ static void create_new_file(GtkWidget *self, gpointer data)
 {
   MarknoteWindow *window = (MarknoteWindow *)data;
   window->file_list = file_list_add_file (window->file_list, NULL, true);
-  add_tab (window, gtk_text_view_new (), "Untitled document");
+  add_tab (window, gtk_text_view_new (), (char *)"Untitled document");
 }
 
 static void page_reordered (AdwTabView* self,
@@ -368,8 +382,47 @@ static gboolean tab_view_close_page(AdwTabView *view, AdwTabPage *page, gpointer
       window->are_file_shortcuts_enabled = false;
     }
 
+  // Set new header_bar informations :
+  FileList *file_info = file_list_get_last_file_info (window->file_list);
+  if (file_info == NULL)
+    {
+      header_bar_change_title_widget (window->header_bar, "marknote", false);
+    }
+  else
+    {
+      if (file_info->file == NULL)
+        {
+          header_bar_change_title_widget (window->header_bar, DEFAULT_FILE_NAME, file_info->is_in_modification);
+        }
+      else
+        {
+          header_bar_change_title_widget (window->header_bar, g_file_get_basename(file_info->file), file_info->is_in_modification);
+        }
+    }
+
   return true;
 }
+
+static void header_bar_change_title_widget(GtkHeaderBar *header_bar, char *new_title, gboolean file_in_modification)
+{
+  GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
+  if (file_in_modification)
+    {
+      gtk_box_append (GTK_BOX (box), GTK_WIDGET (gtk_image_new_from_icon_name ("emblem-important-symbolic")));
+    }
+  gtk_box_append (GTK_BOX (box), GTK_WIDGET (gtk_label_new (new_title)));
+
+  gtk_header_bar_set_title_widget (GTK_HEADER_BAR (header_bar), GTK_WIDGET(box));
+}
+
+static void page_detached (AdwTabView* self,
+                           AdwTabPage* page,
+                           gint position,
+                           gpointer user_data)
+{
+  g_print("Begin drag of : %d\n", position);
+}
+
 
 static void marknote_window_init (MarknoteWindow *self)
 {
@@ -381,7 +434,8 @@ static void marknote_window_init (MarknoteWindow *self)
   g_signal_connect (GTK_BUTTON(self->open_file), "clicked", G_CALLBACK (open_file_chooser), (gpointer)self);
   g_signal_connect (GTK_BUTTON(self->new_file), "clicked", G_CALLBACK (create_new_file), (gpointer)self);
   g_signal_connect (ADW_TAB_VIEW(self->tab_view), "close-page", G_CALLBACK (tab_view_close_page), (gpointer)self);
-  g_signal_connect (ADW_TAB_VIEW(self->tab_view), "page-reordered", G_CALLBACK (page_reordered), (gpointer)self);
+  g_signal_connect (ADW_TAB_VIEW(self->tab_view), "page-reordered", G_CALLBACK (page_reordered),(gpointer)self);
+  g_signal_connect (ADW_TAB_VIEW(self->tab_view), "page-detached", G_CALLBACK (page_detached), (gpointer)self);
 
   adw_tab_bar_set_view (ADW_TAB_BAR(self->tab_bar), ADW_TAB_VIEW (self->tab_view));
 }

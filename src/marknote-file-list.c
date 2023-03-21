@@ -40,13 +40,21 @@ void show_file_list_infos(FileList *list)
         }
         g_print("%s\n", file_name);
 
-        if (temp->is_new_file == true)
+        if (temp->is_new_file)
           {
             g_print("new file\n");
           }
         else
           {
             g_print("not new file\n");
+          }
+        if (temp->is_in_modification)
+          {
+            g_print("modifications_not_saved\n");
+          }
+        else
+          {
+            g_print("no modifications not saved\n");
           }
         g_print("-------------\n");
         temp = temp->next_file;
@@ -62,6 +70,7 @@ FileList * file_list_add_file(FileList *list, GFile *new_file, gboolean is_new_f
   FileList *temp = list;
 
   new_elt->is_new_file = is_new_file;
+  new_elt->is_in_modification = false;
   new_elt->next_file = NULL;
   new_elt->file = new_file;
 
@@ -169,4 +178,21 @@ int file_list_get_pos_of_file_from_path(FileList *list, char * path)
     }
 
   return -1;
+}
+
+FileList * file_list_get_last_file_info(FileList *list)
+{
+  FileList *temp = list;
+
+  if (list == NULL)
+    {
+      return NULL;
+    }
+
+  while(temp->next_file != NULL)
+    {
+      temp=temp->next_file;
+    }
+
+  return temp;
 }

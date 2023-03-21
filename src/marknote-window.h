@@ -25,6 +25,8 @@
 
 G_BEGIN_DECLS
 
+extern const char DEFAULT_FILE_NAME[];
+
 static void save_file_complete (GObject *source_object,
                                 GAsyncResult *result,
                                 gpointer user_data);
@@ -50,4 +52,9 @@ static void page_attached (AdwTabView* self,
                     gint position,
                     gpointer user_data);
 
+static void header_bar_change_title_widget(GtkHeaderBar *header_bar, char *new_title, gboolean file_in_modification);
+static void page_detached (AdwTabView* self,
+                           AdwTabPage* page,
+                           gint position,
+                           gpointer user_data);
 G_END_DECLS
