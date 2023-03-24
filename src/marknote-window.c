@@ -45,14 +45,14 @@ struct _MarknoteWindow
 G_DEFINE_FINAL_TYPE (MarknoteWindow, marknote_window, ADW_TYPE_APPLICATION_WINDOW)
 
 void changed (GtkTextBuffer* self, gpointer user_data) {
+
   AdwTabPage *current_page;
   FileList *file_info;
   MarknoteWindow *window = (MarknoteWindow *)user_data;
 
   current_page = adw_tab_view_get_selected_page (window->tab_view);
   int page_pos = adw_tab_view_get_page_position (window->tab_view, current_page);
-  file_info = file_list_get_file_info_from_pos (window->file_list, page_pos);
-
+  file_info = file_list_get_file_infos_from_tab_view (window->file_list, window->tab_view);
 
   adw_tab_page_set_icon (current_page, g_themed_icon_new("emblem-important-symbolic"));
   if (file_info->file != NULL)
@@ -107,19 +107,29 @@ static void save_file_complete (GObject *source_object,
       int pos = adw_tab_view_get_page_position (ADW_TAB_VIEW(window->tab_view), ADW_TAB_PAGE(current_page));
 
       // Update file information :
-      FileList *file_info = file_list_get_file_info_from_pos (window->file_list, pos);
+      FileList *file_info = file_list_get_file_infos_from_tab_view (window->file_list, window->tab_view);
       file_info->file = file;
       file_info->is_new_file = false;
     }
 }
 
+GtkTextView * get_text_view_from_tab_view(AdwTabView *tab_view)
+{
+  AdwTabPage *current_page = adw_tab_view_get_selected_page (tab_view);
+  GtkWidget *child = adw_tab_page_get_child (ADW_TAB_PAGE(current_page));
+  GtkWidget *scrolled_bar = gtk_widget_get_first_child (GTK_WIDGET(child));
+  GtkWidget *box = gtk_widget_get_first_child (GTK_WIDGET(scrolled_bar));
+
+  return GTK_TEXT_VIEW (gtk_widget_get_first_child (GTK_WIDGET(box)));
+}
+
 static void save_file(MarknoteWindow *self, GFile *file)
 {
-  AdwTabPage *current_page = adw_tab_view_get_selected_page (ADW_TAB_VIEW(self->tab_view));
-  GtkWidget *page_child = adw_tab_page_get_child (ADW_TAB_PAGE(current_page));
-  GtkWidget *text_view = gtk_widget_get_first_child (GTK_WIDGET(page_child));
 
-  GtkTextBuffer *buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW(text_view));
+
+  GtkTextBuffer *buffer = gtk_text_view_get_buffer (
+    get_text_view_from_tab_view(self->tab_view)
+  );
 
   // Retrieve the iterator at the start of the buffer
   GtkTextIter start;
@@ -165,6 +175,7 @@ static void save_as_file(GAction *action G_GNUC_UNUSED,
                          GVariant *param G_GNUC_UNUSED,
                          MarknoteWindow *self)
 {
+
   GtkFileChooser *chooser;
   GtkFileFilter *filter;
   FileList * current_file_info;
@@ -196,6 +207,8 @@ static void save_as_file(GAction *action G_GNUC_UNUSED,
 
   g_signal_connect (native, "response", G_CALLBACK(on_save_response), self);
   gtk_native_dialog_show(GTK_NATIVE_DIALOG(native));
+
+  g_print("AMOGUS !");
 }
 
 static void try_rapid_save(GAction *action  G_GNUC_UNUSED,
@@ -206,7 +219,7 @@ static void try_rapid_save(GAction *action  G_GNUC_UNUSED,
   AdwTabPage *current_page = adw_tab_view_get_selected_page(ADW_TAB_VIEW(self->tab_view));
   int pos = adw_tab_view_get_page_position (ADW_TAB_VIEW(self->tab_view), ADW_TAB_PAGE(current_page));
 
-  FileList *file_info = file_list_get_file_info_from_pos (self->file_list, pos);
+  FileList *file_info = file_list_get_file_infos_from_tab_view (self->file_list, self->tab_view);
 
   if (file_info->is_new_file)
     {
@@ -226,8 +239,16 @@ static void add_tab(MarknoteWindow *window, GtkWidget *text_view, char *file_nam
 
   GtkWidget *scrolled_window = gtk_scrolled_window_new ();
   GtkTextBuffer *buffer;
+  GtkWidget *uuid_label = gtk_label_new (file_list_get_last_file_info (window->file_list)->uuid);
+  gtk_widget_set_vexpand (GTK_WIDGET(uuid_label), false);
+  gtk_widget_set_can_focus (GTK_WIDGET(uuid_label), false);
+  gtk_widget_set_visible (GTK_WIDGET(uuid_label), false);
+  gtk_widget_set_vexpand (GTK_WIDGET(text_view), true);
+  GtkWidget *box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 10);
+  gtk_box_append (GTK_BOX(box), GTK_WIDGET(text_view));
+  gtk_box_append (GTK_BOX(box), GTK_WIDGET(uuid_label));
 
-  gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW(scrolled_window), GTK_WIDGET(text_view));
+  gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW(scrolled_window), GTK_WIDGET(box));
   gtk_widget_set_vexpand (GTK_WIDGET(scrolled_window), true);
   gtk_widget_set_hexpand(GTK_WIDGET(scrolled_window), true);
 
@@ -354,21 +375,9 @@ static void create_new_file(GtkWidget *self, gpointer data)
   add_tab (window, gtk_text_view_new (), (char *)"Untitled document");
 }
 
-static void page_reordered (AdwTabView* self,
-                            AdwTabPage* page,
-                            gint position,
-                            gpointer user_data)
-{
-  g_print("New position for page : %d\n", position);
-}
-
 static gboolean tab_view_close_page(AdwTabView *view, AdwTabPage *page, gpointer user_data)
 {
   MarknoteWindow *window = (MarknoteWindow *)user_data;
-  g_print("Close page !");
-  g_print("Pos of deleted page : %d\n",
-          adw_tab_view_get_page_position (view, page)
-          );
   int page_pos;
   page_pos = adw_tab_view_get_page_position (view, page);
   window->file_list = file_list_delete_at (window->file_list, page_pos);
@@ -415,15 +424,6 @@ static void header_bar_change_title_widget(GtkHeaderBar *header_bar, char *new_t
   gtk_header_bar_set_title_widget (GTK_HEADER_BAR (header_bar), GTK_WIDGET(box));
 }
 
-static void page_detached (AdwTabView* self,
-                           AdwTabPage* page,
-                           gint position,
-                           gpointer user_data)
-{
-  g_print("Begin drag of : %d\n", position);
-}
-
-
 static void marknote_window_init (MarknoteWindow *self)
 {
   gtk_widget_init_template (GTK_WIDGET (self));
@@ -434,8 +434,6 @@ static void marknote_window_init (MarknoteWindow *self)
   g_signal_connect (GTK_BUTTON(self->open_file), "clicked", G_CALLBACK (open_file_chooser), (gpointer)self);
   g_signal_connect (GTK_BUTTON(self->new_file), "clicked", G_CALLBACK (create_new_file), (gpointer)self);
   g_signal_connect (ADW_TAB_VIEW(self->tab_view), "close-page", G_CALLBACK (tab_view_close_page), (gpointer)self);
-  g_signal_connect (ADW_TAB_VIEW(self->tab_view), "page-reordered", G_CALLBACK (page_reordered),(gpointer)self);
-  g_signal_connect (ADW_TAB_VIEW(self->tab_view), "page-detached", G_CALLBACK (page_detached), (gpointer)self);
 
   adw_tab_bar_set_view (ADW_TAB_BAR(self->tab_bar), ADW_TAB_VIEW (self->tab_view));
 }

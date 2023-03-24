@@ -19,11 +19,11 @@
  */
 
 #include "marknote-file-list.h"
+#include <uuid/uuid.h>
 
 void show_file_list_infos(FileList *list)
 {
   FileList *temp = list;
-  char *file_name;
 
   g_print("------- START FILE LIST --------\n");
 
@@ -32,30 +32,7 @@ void show_file_list_infos(FileList *list)
   } else {
     while(temp != NULL)
       {
-
-        if (temp->file != NULL) {
-          file_name = g_file_get_basename (temp->file);
-        } else {
-          file_name = "Untitled Document";
-        }
-        g_print("%s\n", file_name);
-
-        if (temp->is_new_file)
-          {
-            g_print("new file\n");
-          }
-        else
-          {
-            g_print("not new file\n");
-          }
-        if (temp->is_in_modification)
-          {
-            g_print("modifications_not_saved\n");
-          }
-        else
-          {
-            g_print("no modifications not saved\n");
-          }
+        file_list_print_file (temp);
         g_print("-------------\n");
         temp = temp->next_file;
       }
@@ -68,11 +45,16 @@ FileList * file_list_add_file(FileList *list, GFile *new_file, gboolean is_new_f
 {
   FileList *new_elt = malloc(sizeof(*new_elt));
   FileList *temp = list;
+  uuid_t binuuid;
+  uuid_generate_random(binuuid);
+  char *uuid = malloc(37);
+  uuid_unparse_upper(binuuid, uuid);
 
   new_elt->is_new_file = is_new_file;
   new_elt->is_in_modification = false;
   new_elt->next_file = NULL;
   new_elt->file = new_file;
+  new_elt->uuid = uuid;
 
   if (list == NULL) {
     return new_elt;
@@ -84,6 +66,7 @@ FileList * file_list_add_file(FileList *list, GFile *new_file, gboolean is_new_f
       }
     temp->next_file = new_elt;
   }
+
   return list;
 }
 
@@ -107,17 +90,6 @@ FileList * file_list_delete_at(FileList *list, int pos)
     }
 }
 
-FileList * file_list_get_file_info_from_pos(FileList *list, int pos)
-{
-  FileList *temp = list;
-
-  for (int i = 0; i < pos; i++)
-    {
-      temp=temp->next_file;
-    }
-  return temp;
-}
-
 int file_list_get_length(FileList *list)
 {
   FileList *temp = list;
@@ -131,11 +103,34 @@ int file_list_get_length(FileList *list)
   return length;
 }
 
-FileList * file_list_get_file_infos_from_tab_view(FileList *list, AdwTabView *tab_view)
+char *file_list_get_uuid_from_tab_view(AdwTabView *tab_view)
 {
   AdwTabPage *current_page = adw_tab_view_get_selected_page (tab_view);
-  int page_pos = adw_tab_view_get_page_position (tab_view, current_page);
-  return file_list_get_file_info_from_pos(list, page_pos);
+  GtkWidget *child = adw_tab_page_get_child (ADW_TAB_PAGE(current_page));
+  GtkWidget *scrolled_bar = gtk_widget_get_first_child (GTK_WIDGET(child));
+  GtkWidget *box = gtk_widget_get_first_child (GTK_WIDGET(scrolled_bar));
+  GtkWidget *label = gtk_widget_get_last_child (GTK_WIDGET(box));
+  g_print("TEXT : %s\n", (char *)gtk_label_get_text (GTK_LABEL(label)));
+
+  return (char *)gtk_label_get_text (GTK_LABEL(label));
+}
+
+FileList * file_list_get_file_infos_from_tab_view(FileList *list, AdwTabView *tab_view)
+{
+  char *current_uuid = file_list_get_uuid_from_tab_view (tab_view);
+  FileList *temp = list;
+
+  while(temp != NULL)
+    {
+      if (strcmp(current_uuid, temp->uuid) == 0)
+        {
+          g_print("FOUND !\n");
+          return temp;
+        }
+      temp=temp->next_file;
+    }
+
+  return NULL;
 }
 
 gboolean file_list_search_file(FileList *list, GFile *file)
@@ -195,4 +190,34 @@ FileList * file_list_get_last_file_info(FileList *list)
     }
 
   return temp;
+}
+
+void file_list_print_file(FileList *file)
+{
+  char * file_name;
+
+  g_print("UUID : %s\n", file->uuid);
+  if (file->file != NULL) {
+    file_name = g_file_get_basename (file->file);
+  } else {
+    file_name = "Untitled Document";
+  }
+  g_print("%s\n", file_name);
+
+  if (file->is_new_file)
+    {
+      g_print("new file\n");
+    }
+  else
+    {
+      g_print("not new file\n");
+    }
+  if (file->is_in_modification)
+    {
+      g_print("modifications_not_saved\n");
+    }
+  else
+    {
+      g_print("no modifications not saved\n");
+    }
 }

@@ -43,18 +43,6 @@ static void add_tab(MarknoteWindow *window, GtkWidget *text_view, char *file_nam
 static void on_open_response(GtkNativeDialog *native, int response, gpointer data);
 static void open_file_chooser(GtkWidget *widget, gpointer data);
 static void create_new_file(GtkWidget *self, gpointer data);
-static void page_reordered (AdwTabView* self,
-                            AdwTabPage* page,
-                            gint position,
-                            gpointer user_data);
-static void page_attached (AdwTabView* self,
-                    AdwTabPage* page,
-                    gint position,
-                    gpointer user_data);
-
 static void header_bar_change_title_widget(GtkHeaderBar *header_bar, char *new_title, gboolean file_in_modification);
-static void page_detached (AdwTabView* self,
-                           AdwTabPage* page,
-                           gint position,
-                           gpointer user_data);
+GtkTextView * get_text_view_from_tab_view(AdwTabView *tab_view);
 G_END_DECLS

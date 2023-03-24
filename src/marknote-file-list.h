@@ -28,6 +28,7 @@ G_BEGIN_DECLS
 typedef struct FileInfoStruct FileList;
 
 struct FileInfoStruct {
+  char *uuid;
   gboolean is_new_file;
   gboolean is_in_modification;
   GFile *file;
@@ -38,11 +39,12 @@ void show_file_list_infos(FileList *list);
 FileList * file_list_add_file(FileList *list, GFile *new_file, gboolean is_new_file);
 FileList * file_list_delete_at(FileList *list, int pos);
 
-FileList * file_list_get_file_info_from_pos(FileList *list, int pos);
 FileList * file_list_get_file_infos_from_tab_view(FileList *list, AdwTabView *tab_view);
 FileList * file_list_get_last_file_info(FileList *list);
 gboolean file_list_search_file(FileList *list, GFile *file);
 int file_list_get_length(FileList *list);
+char *file_list_get_uuid_from_tab_view(AdwTabView *tab_view);
 int file_list_get_pos_of_file_from_path(FileList *list, char * path);
+void file_list_print_file(FileList *file);
 
 G_END_DECLS
