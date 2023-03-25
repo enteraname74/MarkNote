@@ -423,7 +423,6 @@ static void page_detached (AdwTabView* self,
   g_print("Begin drag of : %d\n", position);
 }
 
-
 static void marknote_window_init (MarknoteWindow *self)
 {
   gtk_widget_init_template (GTK_WIDGET (self));
