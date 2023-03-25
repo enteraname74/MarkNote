@@ -23,123 +23,132 @@
 #include "marknote-window.h"
 #include "marknote-file-list.h"
 
-const char DEFAULT_FILE_NAME[]= "Untitled document";
+const char DEFAULT_FILE_NAME[] = "Untitled document";
 
 struct _MarknoteWindow
 {
-  AdwApplicationWindow  parent_instance;
+  AdwApplicationWindow parent_instance;
 
   /* Template widgets */
-  GtkHeaderBar        *header_bar;
-  GtkButton           *open_file;
-  GtkButton           *new_file;
-  AdwTabView          *tab_view;
-  AdwTabBar           *tab_bar;
-  AdwStatusPage       *status_page;
+  GtkHeaderBar *header_bar;
+  GtkButton *open_file;
+  GtkButton *new_file;
+  AdwTabView *tab_view;
+  AdwTabBar *tab_bar;
+  AdwStatusPage *status_page;
 
   // Open file list :
-  FileList            *file_list;
-  gboolean            are_file_shortcuts_enabled;
+  FileList *file_list;
+  gboolean are_file_shortcuts_enabled;
 };
 
-G_DEFINE_FINAL_TYPE (MarknoteWindow, marknote_window, ADW_TYPE_APPLICATION_WINDOW)
+G_DEFINE_FINAL_TYPE(MarknoteWindow, marknote_window, ADW_TYPE_APPLICATION_WINDOW)
 
-void changed (GtkTextBuffer* self, gpointer user_data) {
+void changed(GtkTextBuffer *self, gpointer user_data)
+{
+
   AdwTabPage *current_page;
   FileList *file_info;
   MarknoteWindow *window = (MarknoteWindow *)user_data;
 
-  current_page = adw_tab_view_get_selected_page (window->tab_view);
-  int page_pos = adw_tab_view_get_page_position (window->tab_view, current_page);
-  file_info = file_list_get_file_info_from_pos (window->file_list, page_pos);
+  current_page = adw_tab_view_get_selected_page(window->tab_view);
+  int page_pos = adw_tab_view_get_page_position(window->tab_view, current_page);
+  file_info = file_list_get_file_infos_from_tab_view(window->file_list, window->tab_view);
 
-
-  adw_tab_page_set_icon (current_page, g_themed_icon_new("emblem-important-symbolic"));
+  adw_tab_page_set_icon(current_page, g_themed_icon_new("emblem-important-symbolic"));
   if (file_info->file != NULL)
-    {
-      header_bar_change_title_widget (window->header_bar, g_file_get_basename(file_info->file), true);
-    }
+  {
+    header_bar_change_title_widget(window->header_bar, g_file_get_basename(file_info->file), true);
+  }
   else
-    {
-      header_bar_change_title_widget (window->header_bar, (char *)"Untitled document", true);
-    }
+  {
+    header_bar_change_title_widget(window->header_bar, (char *)"Untitled document", true);
+  }
 }
 
-static void save_file_complete (GObject *source_object,
-                                GAsyncResult *result,
-                                gpointer user_data)
+static void save_file_complete(GObject *source_object,
+                               GAsyncResult *result,
+                               gpointer user_data)
 {
   MarknoteWindow *window = (MarknoteWindow *)user_data;
-  GFile *file = G_FILE (source_object);
+  GFile *file = G_FILE(source_object);
 
-  g_autoptr (GError) error = NULL;
-  g_file_replace_contents_finish (file, result, NULL, &error);
+  g_autoptr(GError) error = NULL;
+  g_file_replace_contents_finish(file, result, NULL, &error);
 
   g_autofree char *display_name = NULL;
-  g_autoptr (GFileInfo) info = g_file_query_info (file,
-                                                  "standard::display-name",
-                                                  G_FILE_QUERY_INFO_NONE,
-                                                  NULL,
-                                                  NULL);
+  g_autoptr(GFileInfo) info = g_file_query_info(file,
+                                                "standard::display-name",
+                                                G_FILE_QUERY_INFO_NONE,
+                                                NULL,
+                                                NULL);
   if (info != NULL)
-    {
-      display_name = g_strdup(g_file_info_get_attribute_string (info, "standard::display-name"));
-    }
+  {
+    display_name = g_strdup(g_file_info_get_attribute_string(info, "standard::display-name"));
+  }
   else
-    {
-      display_name = g_file_get_basename (file);
-    }
+  {
+    display_name = g_file_get_basename(file);
+  }
 
   if (error != NULL)
-    {
+  {
     g_printerr("Unable to save “%s”: %s\n",
                display_name,
                error->message);
-    }
+  }
   else
-    {
-      // Update file name in UI :
-      AdwTabPage *current_page = adw_tab_view_get_selected_page(ADW_TAB_VIEW(window->tab_view));
-      header_bar_change_title_widget (window->header_bar, display_name, false);
-      adw_tab_page_set_icon (current_page, NULL);
-      adw_tab_page_set_title (ADW_TAB_PAGE(current_page), display_name);
+  {
+    // Update file name in UI :
+    AdwTabPage *current_page = adw_tab_view_get_selected_page(ADW_TAB_VIEW(window->tab_view));
+    header_bar_change_title_widget(window->header_bar, display_name, false);
+    adw_tab_page_set_icon(current_page, NULL);
+    adw_tab_page_set_title(ADW_TAB_PAGE(current_page), display_name);
 
-      int pos = adw_tab_view_get_page_position (ADW_TAB_VIEW(window->tab_view), ADW_TAB_PAGE(current_page));
+    int pos = adw_tab_view_get_page_position(ADW_TAB_VIEW(window->tab_view), ADW_TAB_PAGE(current_page));
 
-      // Update file information :
-      FileList *file_info = file_list_get_file_info_from_pos (window->file_list, pos);
-      file_info->file = file;
-      file_info->is_new_file = false;
-    }
+    // Update file information :
+    FileList *file_info = file_list_get_file_infos_from_tab_view(window->file_list, window->tab_view);
+    file_info->file = file;
+    file_info->is_new_file = false;
+  }
+}
+
+GtkTextView *get_text_view_from_tab_view(AdwTabView *tab_view)
+{
+  AdwTabPage *current_page = adw_tab_view_get_selected_page(tab_view);
+  GtkWidget *child = adw_tab_page_get_child(ADW_TAB_PAGE(current_page));
+  GtkWidget *scrolled_bar = gtk_widget_get_first_child(GTK_WIDGET(child));
+  GtkWidget *box = gtk_widget_get_first_child(GTK_WIDGET(scrolled_bar));
+
+  return GTK_TEXT_VIEW(gtk_widget_get_first_child(GTK_WIDGET(box)));
 }
 
 static void save_file(MarknoteWindow *self, GFile *file)
 {
-  AdwTabPage *current_page = adw_tab_view_get_selected_page (ADW_TAB_VIEW(self->tab_view));
-  GtkWidget *page_child = adw_tab_page_get_child (ADW_TAB_PAGE(current_page));
-  GtkWidget *text_view = gtk_widget_get_first_child (GTK_WIDGET(page_child));
 
-  GtkTextBuffer *buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW(text_view));
+  GtkTextBuffer *buffer = gtk_text_view_get_buffer(
+      get_text_view_from_tab_view(self->tab_view));
 
   // Retrieve the iterator at the start of the buffer
   GtkTextIter start;
-  gtk_text_buffer_get_start_iter (buffer, &start);
+  gtk_text_buffer_get_start_iter(buffer, &start);
 
   // Retrieve the iterator at the end of the buffer
   GtkTextIter end;
-  gtk_text_buffer_get_end_iter (buffer, &end);
+  gtk_text_buffer_get_end_iter(buffer, &end);
 
   // Retrieve all the visible text between the two bounds
-  char *text = gtk_text_buffer_get_text (buffer, &start, &end, FALSE);
+  char *text = gtk_text_buffer_get_text(buffer, &start, &end, FALSE);
 
   // If there is nothing to save, return early
   if (text == NULL)
-   return;
+    return;
 
-  g_autoptr(GBytes) bytes = g_bytes_new_take (text, strlen (text));
+  g_autoptr(GBytes) bytes = g_bytes_new_take(text, strlen(text));
 
   // Start the asynchronous operation to save the data into the file
-  g_file_replace_contents_bytes_async (file,
+  g_file_replace_contents_bytes_async(file,
                                       bytes,
                                       NULL,
                                       FALSE,
@@ -152,11 +161,11 @@ static void save_file(MarknoteWindow *self, GFile *file)
 static void on_save_response(GtkNativeDialog *native, int response, MarknoteWindow *self)
 {
   if (response == GTK_RESPONSE_ACCEPT)
-    {
-      GFile * file = gtk_file_chooser_get_file (GTK_FILE_CHOOSER (native));
+  {
+    GFile *file = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(native));
 
-      save_file(self, file);
-    }
+    save_file(self, file);
+  }
 
   g_object_unref(native);
 }
@@ -165,100 +174,110 @@ static void save_as_file(GAction *action G_GNUC_UNUSED,
                          GVariant *param G_GNUC_UNUSED,
                          MarknoteWindow *self)
 {
+
   GtkFileChooser *chooser;
   GtkFileFilter *filter;
-  FileList * current_file_info;
-  GtkFileChooserNative *native = gtk_file_chooser_native_new ("Save File As",
-                                                              GTK_WINDOW(self),
-                                                              GTK_FILE_CHOOSER_ACTION_SAVE,
-                                                              "_Save",
-                                                              "_Cancel");
-
+  FileList *current_file_info;
+  GtkFileChooserNative *native = gtk_file_chooser_native_new("Save File As",
+                                                             GTK_WINDOW(self),
+                                                             GTK_FILE_CHOOSER_ACTION_SAVE,
+                                                             "_Save",
+                                                             "_Cancel");
 
   // Specify name of current file if it isn't a new one :
   chooser = GTK_FILE_CHOOSER(native);
   filter = gtk_file_filter_new();
-  gtk_file_filter_add_pattern (GTK_FILE_FILTER(filter), "*.txt");
-  gtk_file_filter_add_pattern (GTK_FILE_FILTER(filter), "*.md");
-  gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (chooser), GTK_FILE_FILTER (filter));
+  gtk_file_filter_add_pattern(GTK_FILE_FILTER(filter), "*.txt");
+  gtk_file_filter_add_pattern(GTK_FILE_FILTER(filter), "*.md");
+  gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(chooser), GTK_FILE_FILTER(filter));
 
-  current_file_info = file_list_get_file_infos_from_tab_view (self->file_list, self->tab_view);
+  current_file_info = file_list_get_file_infos_from_tab_view(self->file_list, self->tab_view);
   if (current_file_info->is_new_file)
-    {
-      gtk_file_chooser_set_current_name (chooser, DEFAULT_FILE_NAME);
-    }
+  {
+    gtk_file_chooser_set_current_name(chooser, DEFAULT_FILE_NAME);
+  }
   else
-    {
-      g_print("%s\n",g_file_get_path (current_file_info->file));
-      g_print("%s\n",g_file_get_uri (current_file_info->file));
-      gtk_file_chooser_set_file(chooser, current_file_info->file, NULL);
-    }
+  {
+    g_print("%s\n", g_file_get_path(current_file_info->file));
+    g_print("%s\n", g_file_get_uri(current_file_info->file));
+    gtk_file_chooser_set_file(chooser, current_file_info->file, NULL);
+  }
 
-  g_signal_connect (native, "response", G_CALLBACK(on_save_response), self);
+  g_signal_connect(native, "response", G_CALLBACK(on_save_response), self);
   gtk_native_dialog_show(GTK_NATIVE_DIALOG(native));
+
+  g_print("AMOGUS !");
 }
 
-static void try_rapid_save(GAction *action  G_GNUC_UNUSED,
-                           GVariant *param  G_GNUC_UNUSED,
-                           MarknoteWindow  *self)
+static void try_rapid_save(GAction *action G_GNUC_UNUSED,
+                           GVariant *param G_GNUC_UNUSED,
+                           MarknoteWindow *self)
 {
   // Search the current page shown :
   AdwTabPage *current_page = adw_tab_view_get_selected_page(ADW_TAB_VIEW(self->tab_view));
-  int pos = adw_tab_view_get_page_position (ADW_TAB_VIEW(self->tab_view), ADW_TAB_PAGE(current_page));
+  int pos = adw_tab_view_get_page_position(ADW_TAB_VIEW(self->tab_view), ADW_TAB_PAGE(current_page));
 
-  FileList *file_info = file_list_get_file_info_from_pos (self->file_list, pos);
+  FileList *file_info = file_list_get_file_infos_from_tab_view(self->file_list, self->tab_view);
 
   if (file_info->is_new_file)
-    {
-      save_as_file (NULL, NULL, self);
-    }
+  {
+    save_as_file(NULL, NULL, self);
+  }
   else
-    {
-      save_file (self, file_info->file);
-    }
+  {
+    save_file(self, file_info->file);
+  }
 }
 
 static void add_tab(MarknoteWindow *window, GtkWidget *text_view, char *file_name)
 {
 
   // First, we remove the status page :
-  gtk_widget_set_visible (GTK_WIDGET (window->status_page), false);
+  gtk_widget_set_visible(GTK_WIDGET(window->status_page), false);
 
-  GtkWidget *scrolled_window = gtk_scrolled_window_new ();
+  GtkWidget *scrolled_window = gtk_scrolled_window_new();
   GtkTextBuffer *buffer;
+  GtkWidget *uuid_label = gtk_label_new(file_list_get_last_file_info(window->file_list)->uuid);
+  gtk_widget_set_vexpand(GTK_WIDGET(uuid_label), false);
+  gtk_widget_set_can_focus(GTK_WIDGET(uuid_label), false);
+  gtk_widget_set_visible(GTK_WIDGET(uuid_label), false);
+  gtk_widget_set_vexpand(GTK_WIDGET(text_view), true);
+  GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+  gtk_box_append(GTK_BOX(box), GTK_WIDGET(text_view));
+  gtk_box_append(GTK_BOX(box), GTK_WIDGET(uuid_label));
 
-  gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW(scrolled_window), GTK_WIDGET(text_view));
-  gtk_widget_set_vexpand (GTK_WIDGET(scrolled_window), true);
+  gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolled_window), GTK_WIDGET(box));
+  gtk_widget_set_vexpand(GTK_WIDGET(scrolled_window), true);
   gtk_widget_set_hexpand(GTK_WIDGET(scrolled_window), true);
 
-  AdwTabPage *tab_page = adw_tab_view_add_page (ADW_TAB_VIEW (window->tab_view), GTK_WIDGET(scrolled_window), NULL);
-  adw_tab_page_set_title (ADW_TAB_PAGE(tab_page), file_name);
+  AdwTabPage *tab_page = adw_tab_view_add_page(ADW_TAB_VIEW(window->tab_view), GTK_WIDGET(scrolled_window), NULL);
+  adw_tab_page_set_title(ADW_TAB_PAGE(tab_page), file_name);
 
-  buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW(text_view));
-  g_signal_connect (GTK_TEXT_BUFFER (buffer),"changed", G_CALLBACK (changed), (gpointer)window);
-  show_file_list_infos (window->file_list);
+  buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
+  g_signal_connect(GTK_TEXT_BUFFER(buffer), "changed", G_CALLBACK(changed), (gpointer)window);
+  show_file_list_infos(window->file_list);
 
   // Enable shortcuts if previously disabled :
   if (window->are_file_shortcuts_enabled == false)
-    {
-      // Save action :
-      g_autoptr (GSimpleAction) save_action = g_simple_action_new ("save", NULL);
-      g_signal_connect (save_action, "activate", G_CALLBACK (try_rapid_save), window);
-      g_action_map_add_action (G_ACTION_MAP (window), G_ACTION (save_action));
+  {
+    // Save action :
+    g_autoptr(GSimpleAction) save_action = g_simple_action_new("save", NULL);
+    g_signal_connect(save_action, "activate", G_CALLBACK(try_rapid_save), window);
+    g_action_map_add_action(G_ACTION_MAP(window), G_ACTION(save_action));
 
-      // Save as action :
-      g_autoptr (GSimpleAction) save_as_action = g_simple_action_new ("save-as", NULL);
-      g_signal_connect (save_as_action, "activate", G_CALLBACK (save_as_file), window);
-      g_action_map_add_action (G_ACTION_MAP (window), G_ACTION (save_as_action));
+    // Save as action :
+    g_autoptr(GSimpleAction) save_as_action = g_simple_action_new("save-as", NULL);
+    g_signal_connect(save_as_action, "activate", G_CALLBACK(save_as_file), window);
+    g_action_map_add_action(G_ACTION_MAP(window), G_ACTION(save_as_action));
 
-      window->are_file_shortcuts_enabled = true;
-    }
+    window->are_file_shortcuts_enabled = true;
+  }
 
   // We change the current selected page to the new one :
-  adw_tab_view_set_selected_page (window->tab_view, tab_page);
+  adw_tab_view_set_selected_page(window->tab_view, tab_page);
 
   // We update the header_bar to show the current state of the file :
-  header_bar_change_title_widget (window->header_bar, file_name, false);
+  header_bar_change_title_widget(window->header_bar, file_name, false);
 }
 
 static void on_open_response(GtkNativeDialog *native, int response, gpointer data)
@@ -267,138 +286,127 @@ static void on_open_response(GtkNativeDialog *native, int response, gpointer dat
   char *contents;
   gsize length;
   MarknoteWindow *window = (MarknoteWindow *)data;
-  GtkWidget *text_view = gtk_text_view_new ();
+  GtkWidget *text_view = gtk_text_view_new();
 
   if (response == GTK_RESPONSE_ACCEPT)
+  {
+    GtkFileChooser *chooser = GTK_FILE_CHOOSER(native);
+
+    GFile *file = gtk_file_chooser_get_file(chooser);
+
+    // If opened file is already in our list of files, we simply put focus on the file :
+    if (file_list_search_file(window->file_list, file))
     {
-      GtkFileChooser *chooser = GTK_FILE_CHOOSER (native);
-
-      GFile * file = gtk_file_chooser_get_file (chooser);
-
-      // If opened file is already in our list of files, we simply put focus on the file :
-      if (file_list_search_file (window->file_list, file))
-        {
-          g_print("File in list !\n");
-          int page_position = file_list_get_pos_of_file_from_path (window->file_list, g_file_get_path (file));
-          if (page_position != -1)
-            {
-              g_print("Page position : %d\n", page_position);
-              AdwTabPage *new_selected_page = adw_tab_view_get_nth_page (window->tab_view, page_position);
-              adw_tab_view_set_selected_page (window->tab_view, new_selected_page);
-              return;
-            }
-        }
-
-      window->file_list = file_list_add_file (window->file_list, gtk_file_chooser_get_file (chooser), false);
-      file_name = g_file_get_basename (file);
-
-      if (g_file_load_contents (file, NULL, &contents, &length, NULL, NULL)) {
-        GtkTextBuffer *buffer;
-
-        buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (text_view));
-        gtk_text_buffer_set_text (buffer, contents, length);
-
-        add_tab (window, text_view, file_name);
-
-        g_free(contents);
+      g_print("File in list !\n");
+      int page_position = file_list_get_pos_of_file_from_path(window->file_list, g_file_get_path(file));
+      if (page_position != -1)
+      {
+        g_print("Page position : %d\n", page_position);
+        AdwTabPage *new_selected_page = adw_tab_view_get_nth_page(window->tab_view, page_position);
+        adw_tab_view_set_selected_page(window->tab_view, new_selected_page);
+        return;
       }
-
-      g_free(file_name);
     }
+
+    window->file_list = file_list_add_file(window->file_list, gtk_file_chooser_get_file(chooser), false);
+    file_name = g_file_get_basename(file);
+
+    if (g_file_load_contents(file, NULL, &contents, &length, NULL, NULL))
+    {
+      GtkTextBuffer *buffer;
+
+      buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
+      gtk_text_buffer_set_text(buffer, contents, length);
+
+      add_tab(window, text_view, file_name);
+
+      g_free(contents);
+    }
+
+    g_free(file_name);
+  }
 
   g_object_unref(native);
 }
 
-static void open_file_chooser(GtkWidget *widget, gpointer data) {
+static void open_file_chooser(GtkWidget *widget, gpointer data)
+{
   MarknoteWindow *current_window = (MarknoteWindow *)data;
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
   GtkFileChooser *chooser;
-  GtkFileFilter* filter;
+  GtkFileFilter *filter;
 
-  GtkFileChooserNative *native = gtk_file_chooser_native_new ("Open File",
-                                        GTK_WINDOW(&current_window->parent_instance),
-                                        action,
-                                        "_Open",
-                                        "_Cancel");
+  GtkFileChooserNative *native = gtk_file_chooser_native_new("Open File",
+                                                             GTK_WINDOW(&current_window->parent_instance),
+                                                             action,
+                                                             "_Open",
+                                                             "_Cancel");
 
   chooser = GTK_FILE_CHOOSER(native);
   filter = gtk_file_filter_new();
-  gtk_file_filter_add_pattern (GTK_FILE_FILTER(filter), "*.txt");
-  gtk_file_filter_add_pattern (GTK_FILE_FILTER(filter), "*.md");
-  gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (chooser), GTK_FILE_FILTER (filter));
+  gtk_file_filter_add_pattern(GTK_FILE_FILTER(filter), "*.txt");
+  gtk_file_filter_add_pattern(GTK_FILE_FILTER(filter), "*.md");
+  gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(chooser), GTK_FILE_FILTER(filter));
 
-  g_signal_connect (native, "response",
-                    G_CALLBACK (on_open_response),
-                    current_window);
-  gtk_native_dialog_show (GTK_NATIVE_DIALOG(native));
+  g_signal_connect(native, "response",
+                   G_CALLBACK(on_open_response),
+                   current_window);
+  gtk_native_dialog_show(GTK_NATIVE_DIALOG(native));
 }
 
-static void marknote_window_class_init (MarknoteWindowClass *klass)
+static void marknote_window_class_init(MarknoteWindowClass *klass)
 {
-  GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
+  GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(klass);
 
-  gtk_widget_class_set_template_from_resource (widget_class, "/com/github/MarkNote/ui/marknote-main-window.ui");
-  gtk_widget_class_bind_template_child (widget_class, MarknoteWindow, header_bar);
+  gtk_widget_class_set_template_from_resource(widget_class, "/com/github/MarkNote/ui/marknote-main-window.ui");
+  gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, header_bar);
   gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, open_file);
   gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, new_file);
   gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, tab_view);
   gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, tab_bar);
   gtk_widget_class_bind_template_child(widget_class, MarknoteWindow, status_page);
-
 }
 
 static void create_new_file(GtkWidget *self, gpointer data)
 {
   MarknoteWindow *window = (MarknoteWindow *)data;
-  window->file_list = file_list_add_file (window->file_list, NULL, true);
-  add_tab (window, gtk_text_view_new (), (char *)"Untitled document");
-}
-
-static void page_reordered (AdwTabView* self,
-                            AdwTabPage* page,
-                            gint position,
-                            gpointer user_data)
-{
-  g_print("New position for page : %d\n", position);
+  window->file_list = file_list_add_file(window->file_list, NULL, true);
+  add_tab(window, gtk_text_view_new(), (char *)"Untitled document");
 }
 
 static gboolean tab_view_close_page(AdwTabView *view, AdwTabPage *page, gpointer user_data)
 {
   MarknoteWindow *window = (MarknoteWindow *)user_data;
-  g_print("Close page !");
-  g_print("Pos of deleted page : %d\n",
-          adw_tab_view_get_page_position (view, page)
-          );
   int page_pos;
-  page_pos = adw_tab_view_get_page_position (view, page);
-  window->file_list = file_list_delete_at (window->file_list, page_pos);
-  show_file_list_infos (window->file_list);
-  adw_tab_view_close_page_finish (view, page, !adw_tab_page_get_pinned (page));
+  page_pos = adw_tab_view_get_page_position(view, page);
+  window->file_list = file_list_delete_at(window->file_list, page_pos);
+  show_file_list_infos(window->file_list);
+  adw_tab_view_close_page_finish(view, page, !adw_tab_page_get_pinned(page));
 
   // Disable shortcuts and save options if no files are left open :
-  if (file_list_get_length (window->file_list) == 1)
-    {
-      g_action_map_remove_action (G_ACTION_MAP (window), "save-as");
-      window->are_file_shortcuts_enabled = false;
-    }
+  if (file_list_get_length(window->file_list) == 1)
+  {
+    g_action_map_remove_action(G_ACTION_MAP(window), "save-as");
+    window->are_file_shortcuts_enabled = false;
+  }
 
   // Set new header_bar informations :
-  FileList *file_info = file_list_get_last_file_info (window->file_list);
+  FileList *file_info = file_list_get_last_file_info(window->file_list);
   if (file_info == NULL)
-    {
-      header_bar_change_title_widget (window->header_bar, "marknote", false);
-    }
+  {
+    header_bar_change_title_widget(window->header_bar, "marknote", false);
+  }
   else
+  {
+    if (file_info->file == NULL)
     {
-      if (file_info->file == NULL)
-        {
-          header_bar_change_title_widget (window->header_bar, DEFAULT_FILE_NAME, file_info->is_in_modification);
-        }
-      else
-        {
-          header_bar_change_title_widget (window->header_bar, g_file_get_basename(file_info->file), file_info->is_in_modification);
-        }
+      header_bar_change_title_widget(window->header_bar, DEFAULT_FILE_NAME, file_info->is_in_modification);
     }
+    else
+    {
+      header_bar_change_title_widget(window->header_bar, g_file_get_basename(file_info->file), file_info->is_in_modification);
+    }
+  }
 
   return true;
 }
@@ -407,34 +415,24 @@ static void header_bar_change_title_widget(GtkHeaderBar *header_bar, char *new_t
 {
   GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
   if (file_in_modification)
-    {
-      gtk_box_append (GTK_BOX (box), GTK_WIDGET (gtk_image_new_from_icon_name ("emblem-important-symbolic")));
-    }
-  gtk_box_append (GTK_BOX (box), GTK_WIDGET (gtk_label_new (new_title)));
+  {
+    gtk_box_append(GTK_BOX(box), GTK_WIDGET(gtk_image_new_from_icon_name("emblem-important-symbolic")));
+  }
+  gtk_box_append(GTK_BOX(box), GTK_WIDGET(gtk_label_new(new_title)));
 
-  gtk_header_bar_set_title_widget (GTK_HEADER_BAR (header_bar), GTK_WIDGET(box));
+  gtk_header_bar_set_title_widget(GTK_HEADER_BAR(header_bar), GTK_WIDGET(box));
 }
 
-static void page_detached (AdwTabView* self,
-                           AdwTabPage* page,
-                           gint position,
-                           gpointer user_data)
+static void marknote_window_init(MarknoteWindow *self)
 {
-  g_print("Begin drag of : %d\n", position);
-}
-
-static void marknote_window_init (MarknoteWindow *self)
-{
-  gtk_widget_init_template (GTK_WIDGET (self));
+  gtk_widget_init_template(GTK_WIDGET(self));
 
   // Initialize shortcuts to be disabled (no files are open at the beginning) :
   self->are_file_shortcuts_enabled = false;
 
-  g_signal_connect (GTK_BUTTON(self->open_file), "clicked", G_CALLBACK (open_file_chooser), (gpointer)self);
-  g_signal_connect (GTK_BUTTON(self->new_file), "clicked", G_CALLBACK (create_new_file), (gpointer)self);
-  g_signal_connect (ADW_TAB_VIEW(self->tab_view), "close-page", G_CALLBACK (tab_view_close_page), (gpointer)self);
-  g_signal_connect (ADW_TAB_VIEW(self->tab_view), "page-reordered", G_CALLBACK (page_reordered),(gpointer)self);
-  g_signal_connect (ADW_TAB_VIEW(self->tab_view), "page-detached", G_CALLBACK (page_detached), (gpointer)self);
+  g_signal_connect(GTK_BUTTON(self->open_file), "clicked", G_CALLBACK(open_file_chooser), (gpointer)self);
+  g_signal_connect(GTK_BUTTON(self->new_file), "clicked", G_CALLBACK(create_new_file), (gpointer)self);
+  g_signal_connect(ADW_TAB_VIEW(self->tab_view), "close-page", G_CALLBACK(tab_view_close_page), (gpointer)self);
 
-  adw_tab_bar_set_view (ADW_TAB_BAR(self->tab_bar), ADW_TAB_VIEW (self->tab_view));
+  adw_tab_bar_set_view(ADW_TAB_BAR(self->tab_bar), ADW_TAB_VIEW(self->tab_view));
 }

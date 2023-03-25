@@ -8,6 +8,7 @@ marknote_sources = [
 marknote_deps = [
   dependency('gtk4'),
   dependency('libadwaita-1'),
+  dependency('uuid'),
 ]
 
 marknote_sources += gnome.compile_resources('marknote-resources',
