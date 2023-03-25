@@ -45,4 +45,5 @@ static void open_file_chooser(GtkWidget *widget, gpointer data);
 static void create_new_file(GtkWidget *self, gpointer data);
 static void header_bar_change_title_widget(GtkHeaderBar *header_bar, char *new_title, gboolean file_in_modification);
 GtkTextView * get_text_view_from_tab_view(AdwTabView *tab_view);
+static void browse_text_of_file(GtkTextBuffer *buffer);
 G_END_DECLS

@@ -44,6 +44,18 @@ struct _MarknoteWindow
 
 G_DEFINE_FINAL_TYPE (MarknoteWindow, marknote_window, ADW_TYPE_APPLICATION_WINDOW)
 
+static void browse_text_of_file(GtkTextBuffer *buffer)
+{
+  GtkTextIter start;
+  GtkTextIter end;
+  gtk_text_buffer_get_start_iter (buffer, &start);
+
+  while(gtk_text_iter_forward_line(&start) && gtk_text_iter_forward_sentence_end (&end))
+    {
+      g_print("LINE : %s\n", gtk_text_iter_get_slice(&start, &end));
+    }
+}
+
 void changed (GtkTextBuffer* self, gpointer user_data) {
 
   AdwTabPage *current_page;
@@ -63,6 +75,8 @@ void changed (GtkTextBuffer* self, gpointer user_data) {
     {
       header_bar_change_title_widget (window->header_bar, (char *)"Untitled document", true);
     }
+
+  browse_text_of_file (self);
 }
 
 static void save_file_complete (GObject *source_object,
